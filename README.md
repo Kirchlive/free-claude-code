@@ -404,6 +404,13 @@ Important pieces:
   - **Provider throughput + upstream concurrency:** **`GlobalRateLimiter`** in **`providers/rate_limit.py`** (shared by OpenAI-chat and native‑Anthropic HTTP transports).
   - **Outbound bot pacing + dedupe queue:** **`MessagingRateLimiter`** in **`messaging/limiter.py`** (Telegram / Discord sends).
 
+**Catalog provider checklist (keep contracts green):**
+
+1. Add or update **`PROVIDER_CATALOG`** in **`config/provider_catalog.py`** (transport type, credentials, and native transport fields such as **`native_stream_chunk_mode`** / **`native_messages_header_profile`**).
+2. Wire **`registry_factory`** in **`providers/registry.py`** so factories stay aligned with the catalog (CI enforces parity).
+3. Extend **`tests/contracts/`** if imports or transport invariants change across layers.
+4. Refresh **`canvases/entity-architecture-map.canvas.tsx`** if composition or boundaries move.
+
 ### 1. Project Structure
 
 ```text

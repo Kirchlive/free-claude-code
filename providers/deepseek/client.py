@@ -31,13 +31,6 @@ class DeepSeekProvider(AnthropicMessagesTransport):
             thinking_enabled=self._is_thinking_enabled(request, thinking_enabled),
         )
 
-    def _request_headers(self) -> dict[str, str]:
-        return {
-            "Accept": "text/event-stream",
-            "Content-Type": "application/json",
-            "x-api-key": self._api_key,
-        }
-
     async def _send_model_list_request(self) -> httpx.Response:
         """DeepSeek lists models from the OpenAI-format root, not /anthropic."""
         url = str(

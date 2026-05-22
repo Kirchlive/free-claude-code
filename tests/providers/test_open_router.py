@@ -77,6 +77,8 @@ def open_router_config():
         base_url="https://openrouter.ai/api/v1",
         rate_limit=10,
         rate_window=60,
+        native_messages_header_profile="anthropic_bearer_sse",
+        native_stream_chunk_mode="event",
     )
 
 
@@ -119,6 +121,8 @@ def test_init_uses_configurable_timeouts():
         http_read_timeout=600.0,
         http_write_timeout=15.0,
         http_connect_timeout=5.0,
+        native_messages_header_profile="anthropic_bearer_sse",
+        native_stream_chunk_mode="event",
     )
     with patch("httpx.AsyncClient") as mock_client:
         OpenRouterProvider(config)

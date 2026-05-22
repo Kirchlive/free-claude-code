@@ -13,6 +13,12 @@ TransportType = Literal["openai_chat", "anthropic_messages"]
 
 NativeStreamChunkMode = Literal["line", "event"]
 
+NativeMessagesHeaderProfile = Literal[
+    "messages_minimal",
+    "anthropic_bearer_sse",
+    "anthropic_x_api_key_sse",
+]
+
 # Default upstream base URLs (also re-exported via :mod:`providers.defaults`)
 NVIDIA_NIM_DEFAULT_BASE = "https://integrate.api.nvidia.com/v1"
 KIMI_DEFAULT_BASE = "https://api.moonshot.ai/v1"
@@ -49,6 +55,8 @@ class ProviderDescriptor:
     proxy_attr: str | None = None
     #: Observable SSE framing for native Anthropic ``/messages`` adapters (catalog-driven).
     native_stream_chunk_mode: NativeStreamChunkMode | None = None
+    #: Anthropic-compatible ``/messages`` request headers when using native transports.
+    native_messages_header_profile: NativeMessagesHeaderProfile | None = None
 
 
 PROVIDER_CATALOG: dict[str, ProviderDescriptor] = {
@@ -74,6 +82,7 @@ PROVIDER_CATALOG: dict[str, ProviderDescriptor] = {
         default_base_url=OPENROUTER_DEFAULT_BASE,
         proxy_attr="open_router_proxy",
         native_stream_chunk_mode="event",
+        native_messages_header_profile="anthropic_bearer_sse",
     ),
     "deepseek": ProviderDescriptor(
         provider_id="deepseek",
@@ -84,6 +93,7 @@ PROVIDER_CATALOG: dict[str, ProviderDescriptor] = {
         credential_url="https://platform.deepseek.com/api_keys",
         credential_attr="deepseek_api_key",
         default_base_url=DEEPSEEK_ANTHROPIC_DEFAULT_BASE,
+        native_messages_header_profile="anthropic_x_api_key_sse",
     ),
     "lmstudio": ProviderDescriptor(
         provider_id="lmstudio",
@@ -95,6 +105,7 @@ PROVIDER_CATALOG: dict[str, ProviderDescriptor] = {
         base_url_attr="lm_studio_base_url",
         proxy_attr="lmstudio_proxy",
         native_stream_chunk_mode="line",
+        native_messages_header_profile="messages_minimal",
     ),
     "llamacpp": ProviderDescriptor(
         provider_id="llamacpp",
@@ -106,6 +117,7 @@ PROVIDER_CATALOG: dict[str, ProviderDescriptor] = {
         base_url_attr="llamacpp_base_url",
         proxy_attr="llamacpp_proxy",
         native_stream_chunk_mode="line",
+        native_messages_header_profile="messages_minimal",
     ),
     "ollama": ProviderDescriptor(
         provider_id="ollama",
@@ -123,6 +135,7 @@ PROVIDER_CATALOG: dict[str, ProviderDescriptor] = {
         default_base_url=OLLAMA_DEFAULT_BASE,
         base_url_attr="ollama_base_url",
         native_stream_chunk_mode="line",
+        native_messages_header_profile="messages_minimal",
     ),
     "kimi": ProviderDescriptor(
         provider_id="kimi",
@@ -145,6 +158,7 @@ PROVIDER_CATALOG: dict[str, ProviderDescriptor] = {
         credential_attr="wafer_api_key",
         default_base_url=WAFER_DEFAULT_BASE,
         proxy_attr="wafer_proxy",
+        native_messages_header_profile="anthropic_bearer_sse",
     ),
     "opencode": ProviderDescriptor(
         provider_id="opencode",

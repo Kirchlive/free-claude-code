@@ -11,6 +11,11 @@ from loguru import logger
 from core.trace import trace_event
 
 from .claude_node_processor import ClaudeNodeProcessingContext, ClaudeNodeProcessor
+from .handler_queue_ux import (
+    initial_status_message,
+    mark_processing_status,
+    refresh_queued_positions,
+)
 from .incoming_turn import dispatch_incoming_user_message
 from .models import IncomingMessage
 from .platforms.base import MessagingPlatform, SessionManagerInterface
@@ -134,50 +139,11 @@ class ClaudeMessageHandler:
 
     async def update_queue_positions(self, tree: MessageTree) -> None:
         """Refresh queued status messages after a dequeue."""
-        try:
-            queued_ids = await tree.get_queue_snapshot()
-        except Exception as e:
-            logger.warning(
-                "Failed to read queue snapshot: {}",
-                format_exception_for_log(
-                    e, log_full_message=self._log_messaging_error_details
-                ),
-            )
-            return
-
-        if not queued_ids:
-            return
-
-        position = 0
-        for node_id in queued_ids:
-            node = tree.get_node(node_id)
-            if not node or node.state != MessageState.PENDING:
-                continue
-            position += 1
-            self.platform.fire_and_forget(
-                self.platform.queue_edit_message(
-                    node.incoming.chat_id,
-                    node.status_message_id,
-                    self.format_status(
-                        "📋", "Queued", f"(position {position}) - waiting..."
-                    ),
-                    parse_mode=self._parse_mode(),
-                )
-            )
+        await refresh_queued_positions(self, tree)
 
     async def mark_node_processing(self, tree: MessageTree, node_id: str) -> None:
         """Update the dequeued node's status to processing immediately."""
-        node = tree.get_node(node_id)
-        if not node or node.state == MessageState.ERROR:
-            return
-        self.platform.fire_and_forget(
-            self.platform.queue_edit_message(
-                node.incoming.chat_id,
-                node.status_message_id,
-                self.format_status("🔄", "Processing..."),
-                parse_mode=self._parse_mode(),
-            )
-        )
+        await mark_processing_status(self, tree, node_id)
 
     async def _process_node(
         self,
@@ -193,17 +159,7 @@ class ClaudeMessageHandler:
         parent_node_id: str | None,
     ) -> str:
         """Get initial status message text."""
-        if tree and parent_node_id:
-            # Reply to existing tree
-            if self.tree_queue.is_node_tree_busy(parent_node_id):
-                queue_size = self.tree_queue.get_queue_size(parent_node_id) + 1
-                return self.format_status(
-                    "📋", "Queued", f"(position {queue_size}) - waiting..."
-                )
-            return self.format_status("🔄", "Continuing conversation...")
-
-        # New conversation
-        return self.format_status("⏳", "Launching new Claude CLI instance...")
+        return initial_status_message(self, tree, parent_node_id)
 
     async def stop_all_tasks(self) -> int:
         """

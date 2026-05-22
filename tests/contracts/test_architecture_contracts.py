@@ -115,3 +115,35 @@ def test_catalog_native_stream_chunk_profiles_match_lm_family(monkeypatch) -> No
         provider = create_provider(pid, settings)
         assert isinstance(provider, AnthropicMessagesTransport)
         assert provider.stream_chunk_mode == expected_mode
+
+
+def test_anthropic_messages_catalog_entries_define_header_profiles() -> None:
+    for pid, desc in PROVIDER_CATALOG.items():
+        if desc.transport_type != "anthropic_messages":
+            continue
+        assert desc.native_messages_header_profile is not None, (
+            f"missing native_messages_header_profile: {pid}"
+        )
+
+
+def test_catalog_transport_type_maps_expected_base_class(monkeypatch) -> None:
+    """Each catalog ``transport_type`` resolves to the expected transport ABC."""
+    from config.settings import Settings
+    from providers.anthropic_messages import AnthropicMessagesTransport
+    from providers.openai_compat import OpenAIChatTransport
+    from providers.registry import create_provider
+
+    monkeypatch.setitem(Settings.model_config, "env_file", ())
+    monkeypatch.setenv("MODEL", "nvidia_nim/test-model")
+    dummy = "catalog-contract-dummy-key"
+    for desc in PROVIDER_CATALOG.values():
+        if desc.credential_env:
+            monkeypatch.setenv(desc.credential_env, dummy)
+
+    settings = Settings()
+    for pid, desc in PROVIDER_CATALOG.items():
+        provider = create_provider(pid, settings)
+        if desc.transport_type == "openai_chat":
+            assert isinstance(provider, OpenAIChatTransport), pid
+        else:
+            assert isinstance(provider, AnthropicMessagesTransport), pid

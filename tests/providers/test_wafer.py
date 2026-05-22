@@ -50,6 +50,7 @@ def wafer_config():
         base_url=WAFER_DEFAULT_BASE,
         rate_limit=10,
         rate_window=60,
+        native_messages_header_profile="anthropic_bearer_sse",
     )
 
 

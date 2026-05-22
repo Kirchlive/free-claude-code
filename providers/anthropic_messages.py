@@ -13,6 +13,7 @@ from config.constants import (
     ANTHROPIC_DEFAULT_MAX_OUTPUT_TOKENS,
     NATIVE_MESSAGES_ERROR_BODY_LOG_CAP_BYTES,
 )
+from config.provider_catalog import NativeMessagesHeaderProfile
 from core.anthropic import iter_provider_stream_error_sse_events
 from core.anthropic.emitted_sse_tracker import EmittedNativeSseTracker
 from core.anthropic.native_messages_request import (
@@ -37,6 +38,32 @@ from providers.model_listing import (
 from providers.rate_limit import GlobalRateLimiter
 
 StreamChunkMode = Literal["line", "event"]
+
+_ANTHROPIC_MESSAGES_VERSION_HEADER = "2023-06-01"
+
+
+def build_native_messages_request_headers(
+    profile: NativeMessagesHeaderProfile | None,
+    api_key: str,
+) -> dict[str, str]:
+    """Build catalog-driven native ``POST .../messages`` headers."""
+    effective = profile or "messages_minimal"
+    if effective == "messages_minimal":
+        return {"Content-Type": "application/json"}
+    if effective == "anthropic_bearer_sse":
+        return {
+            "Accept": "text/event-stream",
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "anthropic-version": _ANTHROPIC_MESSAGES_VERSION_HEADER,
+        }
+    if effective == "anthropic_x_api_key_sse":
+        return {
+            "Accept": "text/event-stream",
+            "Content-Type": "application/json",
+            "x-api-key": api_key,
+        }
+    raise AssertionError(f"unknown native_messages_header_profile={effective!r}")
 
 
 async def _maybe_await_aclose(response: Any) -> None:
@@ -138,7 +165,10 @@ class AnthropicMessagesTransport(BaseProvider):
 
     def _request_headers(self) -> dict[str, str]:
         """Return headers for the native messages request."""
-        return {"Content-Type": "application/json"}
+        return build_native_messages_request_headers(
+            self._config.native_messages_header_profile,
+            self._api_key,
+        )
 
     def _build_request_body(
         self, request: Any, thinking_enabled: bool | None = None

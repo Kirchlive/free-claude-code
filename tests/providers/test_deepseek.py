@@ -30,6 +30,7 @@ def deepseek_config():
         rate_limit=10,
         rate_window=60,
         enable_thinking=True,
+        native_messages_header_profile="anthropic_x_api_key_sse",
     )
 
 
@@ -162,6 +163,7 @@ def test_build_request_body_respects_global_thinking_disable():
             rate_limit=1,
             rate_window=1,
             enable_thinking=False,
+            native_messages_header_profile="anthropic_x_api_key_sse",
         )
     )
     request = MessagesRequest.model_validate(
@@ -426,6 +428,7 @@ def test_thinking_off_strips_thinking_history():
             rate_limit=1,
             rate_window=1,
             enable_thinking=False,
+            native_messages_header_profile="anthropic_x_api_key_sse",
         )
     )
     request = MessagesRequest.model_validate(
@@ -508,6 +511,7 @@ def test_preflight_strips_user_image():
             base_url=DEEPSEEK_ANTHROPIC_DEFAULT_BASE,
             rate_limit=1,
             rate_window=1,
+            native_messages_header_profile="anthropic_x_api_key_sse",
         )
     )
     # Should not raise; image is stripped.
@@ -530,6 +534,7 @@ def test_preflight_rejects_mcp_servers():
             base_url=DEEPSEEK_ANTHROPIC_DEFAULT_BASE,
             rate_limit=1,
             rate_window=1,
+            native_messages_header_profile="anthropic_x_api_key_sse",
         )
     )
     with pytest.raises(InvalidRequestError, match="mcp_servers"):
@@ -548,6 +553,7 @@ def test_preflight_rejects_listed_server_tools_in_tools_list():
             base_url=DEEPSEEK_ANTHROPIC_DEFAULT_BASE,
             rate_limit=1,
             rate_window=1,
+            native_messages_header_profile="anthropic_x_api_key_sse",
         )
     )
     with pytest.raises(InvalidRequestError, match="web_search"):
@@ -584,6 +590,7 @@ def test_preflight_rejects_server_tool_result_blocks():
             base_url=DEEPSEEK_ANTHROPIC_DEFAULT_BASE,
             rate_limit=1,
             rate_window=1,
+            native_messages_header_profile="anthropic_x_api_key_sse",
         )
     )
     with pytest.raises(InvalidRequestError, match=r"web_search_tool_result|server"):

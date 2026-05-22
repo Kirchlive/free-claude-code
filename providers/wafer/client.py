@@ -6,8 +6,6 @@ from providers.anthropic_messages import AnthropicMessagesTransport
 from providers.base import ProviderConfig
 from providers.defaults import WAFER_DEFAULT_BASE
 
-_ANTHROPIC_VERSION = "2023-06-01"
-
 
 class WaferProvider(AnthropicMessagesTransport):
     """Wafer using ``https://pass.wafer.ai/v1/messages``."""
@@ -27,14 +25,6 @@ class WaferProvider(AnthropicMessagesTransport):
         if "thinking" not in body:
             body["thinking"] = {"type": "enabled"}
         return body
-
-    def _request_headers(self) -> dict[str, str]:
-        return {
-            "Accept": "text/event-stream",
-            "Authorization": f"Bearer {self._api_key}",
-            "Content-Type": "application/json",
-            "anthropic-version": _ANTHROPIC_VERSION,
-        }
 
     def _model_list_headers(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self._api_key}"}

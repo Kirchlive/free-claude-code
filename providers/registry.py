@@ -176,6 +176,7 @@ def build_provider_config(
         log_raw_sse_events=settings.log_raw_sse_events,
         log_api_error_tracebacks=settings.log_api_error_tracebacks,
         native_stream_chunk_mode=descriptor.native_stream_chunk_mode,
+        native_messages_header_profile=descriptor.native_messages_header_profile,
     )
 
 

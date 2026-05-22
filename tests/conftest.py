@@ -50,9 +50,18 @@ def nim_provider(provider_config):
 
 @pytest.fixture
 def open_router_provider(provider_config):
+    from providers.base import ProviderConfig
     from providers.open_router import OpenRouterProvider
 
-    return OpenRouterProvider(provider_config)
+    cfg = ProviderConfig(
+        api_key=provider_config.api_key,
+        base_url="https://openrouter.ai/api/v1",
+        rate_limit=provider_config.rate_limit,
+        rate_window=provider_config.rate_window,
+        native_messages_header_profile="anthropic_bearer_sse",
+        native_stream_chunk_mode="event",
+    )
+    return OpenRouterProvider(cfg)
 
 
 @pytest.fixture

@@ -92,7 +92,12 @@ async def test_native_openai_compatible_provider_lists_model_ids() -> None:
 
 @pytest.mark.asyncio
 async def test_deepseek_lists_models_from_root_endpoint() -> None:
-    provider = DeepSeekProvider(ProviderConfig(api_key="deepseek-key"))
+    provider = DeepSeekProvider(
+        ProviderConfig(
+            api_key="deepseek-key",
+            native_messages_header_profile="anthropic_x_api_key_sse",
+        )
+    )
     with patch.object(
         provider._client,
         "get",
@@ -109,7 +114,12 @@ async def test_deepseek_lists_models_from_root_endpoint() -> None:
 
 @pytest.mark.asyncio
 async def test_wafer_lists_models_from_default_models_endpoint() -> None:
-    provider = WaferProvider(ProviderConfig(api_key="wafer-key"))
+    provider = WaferProvider(
+        ProviderConfig(
+            api_key="wafer-key",
+            native_messages_header_profile="anthropic_bearer_sse",
+        )
+    )
     with patch.object(
         provider._client,
         "get",
@@ -125,7 +135,13 @@ async def test_wafer_lists_models_from_default_models_endpoint() -> None:
 
 @pytest.mark.asyncio
 async def test_openrouter_lists_only_tool_capable_models() -> None:
-    provider = OpenRouterProvider(ProviderConfig(api_key="open-router-key"))
+    provider = OpenRouterProvider(
+        ProviderConfig(
+            api_key="open-router-key",
+            native_messages_header_profile="anthropic_bearer_sse",
+            native_stream_chunk_mode="event",
+        )
+    )
     with patch.object(
         provider._client,
         "get",
@@ -162,7 +178,13 @@ async def test_openrouter_lists_only_tool_capable_models() -> None:
 
 @pytest.mark.asyncio
 async def test_openrouter_lists_tool_metadata_with_thinking_support() -> None:
-    provider = OpenRouterProvider(ProviderConfig(api_key="open-router-key"))
+    provider = OpenRouterProvider(
+        ProviderConfig(
+            api_key="open-router-key",
+            native_messages_header_profile="anthropic_bearer_sse",
+            native_stream_chunk_mode="event",
+        )
+    )
     with patch.object(
         provider._client,
         "get",
@@ -203,7 +225,13 @@ async def test_openrouter_lists_tool_metadata_with_thinking_support() -> None:
 
 @pytest.mark.asyncio
 async def test_openrouter_lists_empty_set_when_no_tool_capable_models() -> None:
-    provider = OpenRouterProvider(ProviderConfig(api_key="open-router-key"))
+    provider = OpenRouterProvider(
+        ProviderConfig(
+            api_key="open-router-key",
+            native_messages_header_profile="anthropic_bearer_sse",
+            native_stream_chunk_mode="event",
+        )
+    )
     with patch.object(
         provider._client,
         "get",
@@ -223,7 +251,13 @@ async def test_openrouter_lists_empty_set_when_no_tool_capable_models() -> None:
 
 @pytest.mark.asyncio
 async def test_openrouter_model_metadata_rejects_malformed_ids() -> None:
-    provider = OpenRouterProvider(ProviderConfig(api_key="open-router-key"))
+    provider = OpenRouterProvider(
+        ProviderConfig(
+            api_key="open-router-key",
+            native_messages_header_profile="anthropic_bearer_sse",
+            native_stream_chunk_mode="event",
+        )
+    )
     with (
         patch.object(
             provider._client,

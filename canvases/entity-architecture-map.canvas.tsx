@@ -81,6 +81,12 @@ const MISSED_ENTITIES: Array<[string, string, string, string]> = [
     'Architecture prose + canvas labels track imports after structural PRs',
     'contract suites',
   ],
+  [
+    'catalog hygiene',
+    'PROVIDER_CATALOG + registry factories + native profiles',
+    'New adapter: descriptor, registry wiring, contracts, README/canvas touch-in',
+    'tests/contracts',
+  ],
 ];
 
 const DAG_NODES = [

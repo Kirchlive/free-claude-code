@@ -17,13 +17,12 @@ from .node_event_pipeline import handle_session_info_event, process_parsed_cli_e
 from .platforms.base import MessagingPlatform, SessionManagerInterface
 from .safe_diagnostics import format_exception_for_log
 from .session import SessionStore
-from .transcript import RenderCtx, TranscriptBuffer
+from .transcript import RenderCtx, ThrottledTranscriptEditor, TranscriptBuffer
 from .trees.queue_manager import (
     MessageNode,
     MessageState,
     TreeQueueManager,
 )
-from .ui_updates import ThrottledTranscriptEditor
 
 
 @dataclass(frozen=True, slots=True)

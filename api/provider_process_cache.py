@@ -7,8 +7,6 @@ call paths (offline scripts, synchronous tests).
 
 Always access the cache as ``provider_process_cache.PROCESS_PROVIDERS`` (module
 attribute) so tests can rebind it for isolation.
-
-See docs/ARCHITECTURE.md ("Provider lifecycle").
 """
 
 from __future__ import annotations

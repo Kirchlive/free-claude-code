@@ -35,6 +35,8 @@ class ProviderDescriptor:
 
     provider_id: str
     transport_type: TransportType
+    #: Name of the ``_create_<adapter>`` callable in :mod:`providers.registry`.
+    registry_factory: str
     capabilities: tuple[str, ...]
     credential_env: str | None = None
     credential_url: str | None = None
@@ -49,56 +51,59 @@ PROVIDER_CATALOG: dict[str, ProviderDescriptor] = {
     "nvidia_nim": ProviderDescriptor(
         provider_id="nvidia_nim",
         transport_type="openai_chat",
+        registry_factory="_create_nvidia_nim",
+        capabilities=("chat", "streaming", "tools", "thinking", "rate_limit"),
         credential_env="NVIDIA_NIM_API_KEY",
         credential_url="https://build.nvidia.com/settings/api-keys",
         credential_attr="nvidia_nim_api_key",
         default_base_url=NVIDIA_NIM_DEFAULT_BASE,
         proxy_attr="nvidia_nim_proxy",
-        capabilities=("chat", "streaming", "tools", "thinking", "rate_limit"),
     ),
     "open_router": ProviderDescriptor(
         provider_id="open_router",
         transport_type="anthropic_messages",
+        registry_factory="_create_open_router",
+        capabilities=("chat", "streaming", "tools", "thinking", "native_anthropic"),
         credential_env="OPENROUTER_API_KEY",
         credential_url="https://openrouter.ai/keys",
         credential_attr="open_router_api_key",
         default_base_url=OPENROUTER_DEFAULT_BASE,
         proxy_attr="open_router_proxy",
-        capabilities=("chat", "streaming", "tools", "thinking", "native_anthropic"),
     ),
     "deepseek": ProviderDescriptor(
         provider_id="deepseek",
         transport_type="anthropic_messages",
+        registry_factory="_create_deepseek",
+        capabilities=("chat", "streaming", "tools", "thinking", "native_anthropic"),
         credential_env="DEEPSEEK_API_KEY",
         credential_url="https://platform.deepseek.com/api_keys",
         credential_attr="deepseek_api_key",
         default_base_url=DEEPSEEK_ANTHROPIC_DEFAULT_BASE,
-        capabilities=("chat", "streaming", "tools", "thinking", "native_anthropic"),
     ),
     "lmstudio": ProviderDescriptor(
         provider_id="lmstudio",
         transport_type="anthropic_messages",
+        registry_factory="_create_lmstudio",
+        capabilities=("chat", "streaming", "tools", "native_anthropic", "local"),
         static_credential="lm-studio",
         default_base_url=LMSTUDIO_DEFAULT_BASE,
         base_url_attr="lm_studio_base_url",
         proxy_attr="lmstudio_proxy",
-        capabilities=("chat", "streaming", "tools", "native_anthropic", "local"),
     ),
     "llamacpp": ProviderDescriptor(
         provider_id="llamacpp",
         transport_type="anthropic_messages",
+        registry_factory="_create_llamacpp",
+        capabilities=("chat", "streaming", "tools", "native_anthropic", "local"),
         static_credential="llamacpp",
         default_base_url=LLAMACPP_DEFAULT_BASE,
         base_url_attr="llamacpp_base_url",
         proxy_attr="llamacpp_proxy",
-        capabilities=("chat", "streaming", "tools", "native_anthropic", "local"),
     ),
     "ollama": ProviderDescriptor(
         provider_id="ollama",
         transport_type="anthropic_messages",
-        static_credential="ollama",
-        default_base_url=OLLAMA_DEFAULT_BASE,
-        base_url_attr="ollama_base_url",
+        registry_factory="_create_ollama",
         capabilities=(
             "chat",
             "streaming",
@@ -107,65 +112,74 @@ PROVIDER_CATALOG: dict[str, ProviderDescriptor] = {
             "native_anthropic",
             "local",
         ),
+        static_credential="ollama",
+        default_base_url=OLLAMA_DEFAULT_BASE,
+        base_url_attr="ollama_base_url",
     ),
     "kimi": ProviderDescriptor(
         provider_id="kimi",
         transport_type="openai_chat",
+        registry_factory="_create_kimi",
+        capabilities=("chat", "streaming", "tools"),
         credential_env="KIMI_API_KEY",
         credential_url="https://platform.moonshot.cn/console/api-keys",
         credential_attr="kimi_api_key",
         default_base_url=KIMI_DEFAULT_BASE,
         proxy_attr="kimi_proxy",
-        capabilities=("chat", "streaming", "tools"),
     ),
     "wafer": ProviderDescriptor(
         provider_id="wafer",
         transport_type="anthropic_messages",
+        registry_factory="_create_wafer",
+        capabilities=("chat", "streaming", "tools", "thinking", "native_anthropic"),
         credential_env="WAFER_API_KEY",
         credential_url="https://www.wafer.ai/pass",
         credential_attr="wafer_api_key",
         default_base_url=WAFER_DEFAULT_BASE,
         proxy_attr="wafer_proxy",
-        capabilities=("chat", "streaming", "tools", "thinking", "native_anthropic"),
     ),
     "opencode": ProviderDescriptor(
         provider_id="opencode",
         transport_type="openai_chat",
+        registry_factory="_create_opencode",
+        capabilities=("chat", "streaming", "tools", "thinking", "rate_limit"),
         credential_env="OPENCODE_API_KEY",
         credential_url="https://opencode.ai/auth",
         credential_attr="opencode_api_key",
         default_base_url=OPENCODE_DEFAULT_BASE,
         proxy_attr="opencode_proxy",
-        capabilities=("chat", "streaming", "tools", "thinking", "rate_limit"),
     ),
     "opencode_go": ProviderDescriptor(
         provider_id="opencode_go",
         transport_type="openai_chat",
+        registry_factory="_create_opencode_go",
+        capabilities=("chat", "streaming", "tools", "thinking", "rate_limit"),
         credential_env="OPENCODE_API_KEY",
         credential_url="https://opencode.ai/auth",
         credential_attr="opencode_api_key",
         default_base_url=OPENCODE_GO_DEFAULT_BASE,
         proxy_attr="opencode_go_proxy",
-        capabilities=("chat", "streaming", "tools", "thinking", "rate_limit"),
     ),
     "zai": ProviderDescriptor(
         provider_id="zai",
         transport_type="openai_chat",
+        registry_factory="_create_zai",
+        capabilities=("chat", "streaming", "tools", "thinking", "rate_limit"),
         credential_env="ZAI_API_KEY",
         credential_attr="zai_api_key",
         default_base_url=ZAI_DEFAULT_BASE,
         proxy_attr="zai_proxy",
-        capabilities=("chat", "streaming", "tools", "thinking", "rate_limit"),
     ),
     "fireworks": ProviderDescriptor(
         provider_id="fireworks",
         transport_type="openai_chat",
+        registry_factory="_create_fireworks",
+        capabilities=("chat", "streaming", "tools", "thinking", "rate_limit"),
         credential_env="FIREWORKS_API_KEY",
         credential_url="https://fireworks.ai/account/api-keys",
         credential_attr="fireworks_api_key",
         default_base_url=FIREWORKS_DEFAULT_BASE,
         proxy_attr="fireworks_proxy",
-        capabilities=("chat", "streaming", "tools", "thinking", "rate_limit"),
     ),
 }
 
@@ -174,3 +188,12 @@ SUPPORTED_PROVIDER_IDS: tuple[str, ...] = tuple(PROVIDER_CATALOG.keys())
 
 if len(set(SUPPORTED_PROVIDER_IDS)) != len(SUPPORTED_PROVIDER_IDS):
     raise AssertionError("Duplicate provider ids in PROVIDER_CATALOG key order")
+
+
+def provider_ids_for_transport(transport: TransportType) -> frozenset[str]:
+    """Return provider ids using the given upstream transport kind."""
+    return frozenset(
+        pid
+        for pid, descriptor in PROVIDER_CATALOG.items()
+        if descriptor.transport_type == transport
+    )

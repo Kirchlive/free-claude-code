@@ -12,7 +12,6 @@ from typing import Any
 
 from loguru import logger
 
-from config.settings import get_settings
 from core.rate_limit import StrictSlidingWindowLimiter as SlidingWindowLimiter
 
 from .safe_diagnostics import format_exception_for_log
@@ -38,20 +37,34 @@ class MessagingRateLimiter:
         *,
         rate_limit: int = 1,
         rate_window: float = 1.0,
+        log_messaging_error_details: bool = False,
     ) -> MessagingRateLimiter:
         """Get the singleton instance of the limiter.
 
         ``rate_limit`` and ``rate_window`` apply only when the singleton is first
         created. Call :meth:`shutdown_instance` before changing parameters.
+
+        Similarly, ``log_messaging_error_details`` is applied only when the
+        singleton is first constructed.
         """
         async with cls._lock:
             if cls._instance is None:
-                cls._instance = cls(rate_limit=rate_limit, rate_window=rate_window)
+                cls._instance = cls(
+                    rate_limit=rate_limit,
+                    rate_window=rate_window,
+                    log_messaging_error_details=log_messaging_error_details,
+                )
                 # Start the background worker (tracked for graceful shutdown).
                 cls._instance._start_worker()
         return cls._instance
 
-    def __init__(self, *, rate_limit: int, rate_window: float) -> None:
+    def __init__(
+        self,
+        *,
+        rate_limit: int,
+        rate_window: float,
+        log_messaging_error_details: bool = False,
+    ) -> None:
         # Prevent double initialization in singleton
         if hasattr(self, "_initialized"):
             return
@@ -68,6 +81,7 @@ class MessagingRateLimiter:
 
         self._initialized = True
         self._paused_until = 0
+        self._log_messaging_error_details = log_messaging_error_details
 
         logger.info(
             f"MessagingRateLimiter initialized ({rate_limit} req / {rate_window}s with Task Compaction)"
@@ -146,7 +160,7 @@ class MessagingRateLimiter:
                                 asyncio.get_event_loop().time() + wait_secs
                             )
                         else:
-                            d = get_settings().log_messaging_error_details
+                            d = self._log_messaging_error_details
                             logger.error(
                                 "Error in limiter worker for key {}: {}",
                                 dedup_key,
@@ -155,7 +169,7 @@ class MessagingRateLimiter:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                d = get_settings().log_messaging_error_details
+                d = self._log_messaging_error_details
                 if d:
                     logger.error(
                         "MessagingRateLimiter worker critical error: {}",
@@ -192,7 +206,7 @@ class MessagingRateLimiter:
         except asyncio.CancelledError:
             pass
         except Exception as e:
-            d = get_settings().log_messaging_error_details
+            d = self._log_messaging_error_details
             logger.debug(
                 "MessagingRateLimiter worker shutdown error: {}",
                 format_exception_for_log(e, log_full_message=d),
@@ -269,7 +283,7 @@ class MessagingRateLimiter:
                         x in error_msg for x in ["connect", "timeout", "broken"]
                     ):
                         wait = 2**attempt
-                        d = get_settings().log_messaging_error_details
+                        d = self._log_messaging_error_details
                         if d:
                             logger.warning(
                                 "Limiter fire_and_forget transient error (attempt {}): {}. Retrying in {}s...",
@@ -287,7 +301,7 @@ class MessagingRateLimiter:
                         await asyncio.sleep(wait)
                         continue
 
-                    d = get_settings().log_messaging_error_details
+                    d = self._log_messaging_error_details
                     logger.error(
                         "Final error in fire_and_forget for key {}: {}",
                         dedup_key,

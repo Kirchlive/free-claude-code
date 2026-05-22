@@ -6,6 +6,7 @@ from fastapi import Depends, HTTPException, Request
 from loguru import logger
 from starlette.applications import Starlette
 
+import api.provider_process_cache as _process_cache
 from config.settings import Settings
 from config.settings import get_settings as _get_settings
 from core.anthropic import get_user_facing_error_message
@@ -17,10 +18,7 @@ from providers.exceptions import (
 )
 from providers.registry import PROVIDER_DESCRIPTORS, ProviderRegistry
 
-# Process-level cache: only for :func:`get_provider_for_type` / :func:`get_provider`
-# when there is no ``Request``/``app`` (unit tests, scripts). HTTP handlers must pass
-# ``app`` to :func:`resolve_provider` so the app-scoped registry is used.
-_providers: dict[str, BaseProvider] = {}
+# Process-level provider cache: :mod:`api.provider_process_cache`.
 
 
 def get_settings() -> Settings:
@@ -41,8 +39,8 @@ def resolve_provider(
     Callers that construct a bare ``FastAPI`` without lifespan must set
     ``app.state.provider_registry`` explicitly.
 
-    When ``app`` is ``None`` (no HTTP context), uses the process-level
-    :data:`_providers` cache only.
+    When ``app`` is ``None`` (no HTTP context), uses
+    :data:`api.provider_process_cache.PROCESS_PROVIDERS` only.
     """
     if app is not None:
         reg = getattr(app.state, "provider_registry", None)
@@ -52,7 +50,11 @@ def resolve_provider(
                 "or assign app.state.provider_registry for test apps."
             )
         return _resolve_with_registry(reg, provider_type, settings)
-    return _resolve_with_registry(ProviderRegistry(_providers), provider_type, settings)
+    return _resolve_with_registry(
+        ProviderRegistry(_process_cache.PROCESS_PROVIDERS),
+        provider_type,
+        settings,
+    )
 
 
 def _resolve_with_registry(
@@ -137,8 +139,11 @@ def get_provider() -> BaseProvider:
 
 
 async def cleanup_provider():
-    """Cleanup all provider resources."""
-    global _providers
-    await ProviderRegistry(_providers).cleanup()
-    _providers = {}
-    logger.debug("Provider cleanup completed")
+    """Cleanup process-level cached providers (:mod:`api.provider_process_cache`).
+
+    Does not dispose :attr:`Starlette.state.provider_registry` — use that registry's
+    :meth:`~providers.registry.ProviderRegistry.cleanup` instead (handled on
+    server shutdown and admin reload).
+    """
+    await _process_cache.cleanup_process_providers()
+    logger.debug("Process-level provider cleanup completed")

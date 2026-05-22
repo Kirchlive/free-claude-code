@@ -12,6 +12,7 @@ _API_ALLOWED_PROVIDER_MODULES = frozenset(
         "providers.base",
         "providers.exceptions",
         "providers.registry",
+        "providers.rate_limit",
     }
 )
 

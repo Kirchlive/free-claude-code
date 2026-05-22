@@ -197,6 +197,7 @@ class AppRuntime:
                     messaging_rate_window=self.settings.messaging_rate_window,
                     log_raw_messaging_content=self.settings.log_raw_messaging_content,
                     log_api_error_tracebacks=self.settings.log_api_error_tracebacks,
+                    log_messaging_error_details=self.settings.log_messaging_error_details,
                 ),
             )
 
@@ -295,6 +296,7 @@ class AppRuntime:
                 },
                 queue_update_callback=self.message_handler.update_queue_positions,
                 node_started_callback=self.message_handler.mark_node_processing,
+                log_messaging_error_details=self.settings.log_messaging_error_details,
             )
         )
         if self.message_handler.tree_queue.cleanup_stale_nodes() > 0:

@@ -60,13 +60,13 @@ def _make_mock_settings(**overrides):
 
 @pytest.fixture(autouse=True)
 def reset_provider():
-    """Reset the global _providers registry between tests."""
-    import api.dependencies
+    """Reset the process-level provider cache between tests."""
+    import api.provider_process_cache as ppc
 
-    saved = api.dependencies._providers
-    api.dependencies._providers = {}
+    saved = ppc.PROCESS_PROVIDERS
+    ppc.PROCESS_PROVIDERS = {}
     yield
-    api.dependencies._providers = saved
+    ppc.PROCESS_PROVIDERS = saved
 
 
 @pytest.mark.asyncio
@@ -473,6 +473,20 @@ def test_resolve_provider_per_app_uses_separate_registries() -> None:
         assert isinstance(p1, NvidiaNimProvider)
         assert isinstance(p2, NvidiaNimProvider)
         assert p1 is not p2
+
+
+def test_resolve_provider_with_app_leaves_process_cache_empty() -> None:
+    """App-scoped resolution must not populate :data:`provider_process_cache.PROCESS_PROVIDERS`."""
+    import api.provider_process_cache as ppc
+
+    with patch("api.dependencies.get_settings") as mock_settings:
+        mock_settings.return_value = _make_mock_settings()
+        settings = _make_mock_settings()
+        ppc.PROCESS_PROVIDERS.clear()
+        app = SimpleNamespace(state=State())
+        app.state.provider_registry = ProviderRegistry()
+        _ = resolve_provider("nvidia_nim", app=cast(Starlette, app), settings=settings)
+        assert len(ppc.PROCESS_PROVIDERS) == 0
 
 
 def test_resolve_provider_missing_registry_raises_service_unavailable() -> None:

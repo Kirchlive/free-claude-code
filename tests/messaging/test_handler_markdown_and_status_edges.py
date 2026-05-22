@@ -286,7 +286,9 @@ async def test_update_ui_handles_transcript_render_exception():
     )
     node = MessageNode(node_id="n1", incoming=incoming, status_message_id="s1")
 
-    with patch.object(handler, "_create_transcript_and_render_ctx") as mock_create:
+    with patch.object(
+        handler._node_processor, "_create_transcript_and_render_ctx"
+    ) as mock_create:
         transcript = MagicMock()
         transcript.render = MagicMock(side_effect=ValueError("render failed"))
         render_ctx = MagicMock()

@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 from loguru import logger
 
+from config.provider_catalog import provider_ids_for_transport
 from config.settings import Settings
 from core.anthropic import get_token_count, get_user_facing_error_message
 from core.anthropic.sse import ANTHROPIC_SSE_RESPONSE_HEADERS
@@ -33,8 +34,8 @@ TokenCounter = Callable[[list[Any], str | list[Any] | None, list[Any] | None], i
 
 ProviderGetter = Callable[[str], BaseProvider]
 
-# Providers that use ``/chat/completions`` + Anthropic-to-OpenAI conversion (not native Messages).
-_OPENAI_CHAT_UPSTREAM_IDS = frozenset({"nvidia_nim", "opencode", "opencode_go", "zai"})
+# Upstream adapters using OpenAI ``/chat/completions`` (+ Anthropic conversion).
+_OPENAI_CHAT_UPSTREAM_IDS = provider_ids_for_transport("openai_chat")
 
 
 def anthropic_sse_streaming_response(

@@ -104,20 +104,21 @@ def _create_fireworks(config: ProviderConfig, _settings: Settings) -> BaseProvid
     return FireworksProvider(config)
 
 
-PROVIDER_FACTORIES: dict[str, ProviderFactory] = {
-    "nvidia_nim": _create_nvidia_nim,
-    "open_router": _create_open_router,
-    "deepseek": _create_deepseek,
-    "lmstudio": _create_lmstudio,
-    "llamacpp": _create_llamacpp,
-    "ollama": _create_ollama,
-    "kimi": _create_kimi,
-    "wafer": _create_wafer,
-    "opencode": _create_opencode,
-    "opencode_go": _create_opencode_go,
-    "zai": _create_zai,
-    "fireworks": _create_fireworks,
-}
+_MOD = globals()
+PROVIDER_FACTORIES: dict[str, ProviderFactory] = {}
+for pid, desc in PROVIDER_CATALOG.items():
+    try:
+        factory_fn = _MOD[desc.registry_factory]
+    except KeyError as exc:
+        raise AssertionError(
+            f"registry_factory {desc.registry_factory!r} missing from providers.registry "
+            f"for provider {pid}"
+        ) from exc
+    if not callable(factory_fn):
+        raise AssertionError(
+            f"registry_factory {desc.registry_factory!r} for {pid} is not callable"
+        )
+    PROVIDER_FACTORIES[pid] = factory_fn
 
 if set(PROVIDER_DESCRIPTORS) != set(SUPPORTED_PROVIDER_IDS) or set(
     PROVIDER_FACTORIES

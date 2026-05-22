@@ -45,6 +45,7 @@ class TestCreateMessagingPlatform:
             messaging_rate_window=1.0,
             log_raw_messaging_content=False,
             log_api_error_tracebacks=False,
+            log_messaging_error_details=False,
         )
 
     def test_telegram_without_token(self):
@@ -93,6 +94,7 @@ class TestCreateMessagingPlatform:
             messaging_rate_window=1.0,
             log_raw_messaging_content=False,
             log_api_error_tracebacks=False,
+            log_messaging_error_details=False,
         )
 
     def test_discord_without_token(self):

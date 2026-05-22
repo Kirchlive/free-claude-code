@@ -8,13 +8,15 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import dotenv_values
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, computed_field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .constants import HTTP_CONNECT_TIMEOUT_DEFAULT
+from .messaging_settings import MessagingSettings
 from .nim import NimSettings
 from .paths import default_claude_workspace_path, managed_env_path
 from .provider_ids import SUPPORTED_PROVIDER_IDS
+from .server_runtime_settings import ProviderThroughputSettings, ServerRuntimeSettings
 
 
 @dataclass(frozen=True, slots=True)
@@ -525,6 +527,35 @@ class Settings(BaseSettings):
             part.strip().lower()
             for part in self.web_fetch_allowed_schemes.split(",")
             if part.strip()
+        )
+
+    @computed_field
+    def messaging_bundle(self) -> MessagingSettings:
+        """Messaging knobs grouped for injection into optional bot runtime."""
+        return MessagingSettings(
+            messaging_platform=self.messaging_platform,
+            messaging_rate_limit=self.messaging_rate_limit,
+            messaging_rate_window=self.messaging_rate_window,
+            log_messaging_error_details=self.log_messaging_error_details,
+            log_raw_messaging_content=self.log_raw_messaging_content,
+        )
+
+    @computed_field
+    def server_runtime_bundle(self) -> ServerRuntimeSettings:
+        """Primary HTTP bind + auth subset."""
+        return ServerRuntimeSettings(
+            host=self.host,
+            port=self.port,
+            anthropic_auth_token=self.anthropic_auth_token,
+        )
+
+    @computed_field
+    def provider_throughput_bundle(self) -> ProviderThroughputSettings:
+        """Values mirrored into each :class:`~providers.base.ProviderConfig` instance."""
+        return ProviderThroughputSettings(
+            provider_rate_limit=self.provider_rate_limit,
+            provider_rate_window=self.provider_rate_window,
+            provider_max_concurrency=self.provider_max_concurrency,
         )
 
     @staticmethod

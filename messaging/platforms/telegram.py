@@ -72,6 +72,7 @@ class TelegramPlatform(MessagingPlatform):
         messaging_rate_window: float = 1.0,
         log_raw_messaging_content: bool = False,
         log_api_error_tracebacks: bool = False,
+        log_messaging_error_details: bool = False,
     ):
         if not TELEGRAM_AVAILABLE:
             raise ImportError(
@@ -105,6 +106,7 @@ class TelegramPlatform(MessagingPlatform):
         self._messaging_rate_window = messaging_rate_window
         self._log_raw_messaging_content = log_raw_messaging_content
         self._log_api_error_tracebacks = log_api_error_tracebacks
+        self._log_messaging_error_details = log_messaging_error_details
 
     async def _register_pending_voice(
         self, chat_id: str, voice_msg_id: str, status_msg_id: str
@@ -183,6 +185,7 @@ class TelegramPlatform(MessagingPlatform):
         self._limiter = await MessagingRateLimiter.get_instance(
             rate_limit=self._messaging_rate_limit,
             rate_window=self._messaging_rate_window,
+            log_messaging_error_details=self._log_messaging_error_details,
         )
 
         # Send startup notification

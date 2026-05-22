@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 
 from config.settings import Settings
 from config.settings import get_settings as get_cached_settings
+from providers.rate_limit import GlobalRateLimiter
 from providers.registry import ProviderRegistry
 
 from .admin_config import (
@@ -25,6 +26,7 @@ from .admin_config import (
     write_managed_env,
 )
 from .admin_urls import local_admin_url
+from .dependencies import cleanup_provider
 
 router = APIRouter()
 
@@ -129,6 +131,8 @@ async def apply_admin_config(
     old_registry = getattr(request.app.state, "provider_registry", None)
     if isinstance(old_registry, ProviderRegistry):
         await old_registry.cleanup()
+    await cleanup_provider()
+    GlobalRateLimiter.reset_instance()
     request.app.state.provider_registry = ProviderRegistry()
     request.app.state.admin_pending_fields = result["pending_fields"]
     return result

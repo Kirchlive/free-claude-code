@@ -8,8 +8,6 @@ from pathlib import Path
 
 _NAMES = frozenset(
     {
-        "get_provider",
-        "get_provider_for_type",
         "get_process_cached_provider",
         "get_process_cached_provider_for_type",
     }

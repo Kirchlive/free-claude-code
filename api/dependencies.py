@@ -8,8 +8,6 @@ via :func:`resolve_provider` and an explicit ``Starlette`` app instance.
 intentionally target the small :class:`~api.provider_process_cache`-backed fallback
 for scripts, smoke harnesses, and unit tests — they must not appear in modules like
 ``api.routes`` or ``api.services``.
-
-Legacy aliases :func:`get_provider` / :func:`get_provider_for_type` remain exported.
 """
 
 import secrets
@@ -119,12 +117,6 @@ def get_process_cached_provider_for_type(provider_type: str) -> BaseProvider:
     return resolve_provider(provider_type, app=None, settings=get_settings())
 
 
-def get_provider_for_type(provider_type: str) -> BaseProvider:
-    """Deprecated: use :func:`get_process_cached_provider_for_type`."""
-
-    return get_process_cached_provider_for_type(provider_type)
-
-
 def require_api_key(
     request: Request, settings: Settings = Depends(get_settings)
 ) -> None:
@@ -171,12 +163,6 @@ def get_process_cached_provider() -> BaseProvider:
     app-scoped :class:`~providers.registry.ProviderRegistry` is used.
     """
     return get_process_cached_provider_for_type(get_settings().provider_type)
-
-
-def get_provider() -> BaseProvider:
-    """Deprecated: use :func:`get_process_cached_provider`."""
-
-    return get_process_cached_provider()
 
 
 async def cleanup_provider():

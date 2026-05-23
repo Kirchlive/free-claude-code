@@ -11,11 +11,7 @@ _API_ALLOWED_PROVIDER_MODULES = frozenset(
         "providers.exceptions",
         "providers.registry",
         "providers.rate_limit",
-    }
-)
-
-_MESSAGING_ALLOWED_PROVIDER_MODULES = frozenset(
-    {
+        # AppRuntime constructs NIM ASR shim for Telegram/Discord (composition root).
         "providers.nvidia_nim.transcription_backend",
     }
 )
@@ -88,8 +84,8 @@ def test_config_does_not_import_non_config_packages() -> None:
 def test_messaging_does_not_import_disallowed_modules() -> None:
     """Messaging is wired by ``api.runtime``; it must not depend on ``api``/``cli``.
 
-    The only allowed ``providers.*`` import is documented in
-    ``_MESSAGING_ALLOWED_PROVIDER_MODULES`` (NIM voice backend for platform options).
+    It must not import ``providers.*`` adapters (inject ``TranscriptionBackend`` from ``api``
+    composition roots).
     """
     repo_root = Path(__file__).resolve().parents[2]
     offenders: list[str] = []
@@ -104,10 +100,7 @@ def test_messaging_does_not_import_disallowed_modules() -> None:
                 or imported.startswith("cli.")
                 or imported == "smoke"
                 or imported.startswith("smoke.")
-                or (
-                    imported.startswith("providers.")
-                    and imported not in _MESSAGING_ALLOWED_PROVIDER_MODULES
-                )
+                or imported.startswith("providers.")
             ):
                 rel = path.relative_to(repo_root)
                 offenders.append(f"{rel}: {imported}")

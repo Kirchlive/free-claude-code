@@ -17,13 +17,15 @@ from messaging.platforms.factory import (
 )
 from messaging.session import SessionStore
 from messaging.trees.queue_manager import TreeQueueManager
-from providers.nvidia_nim.transcription_backend import NvidiaNimTranscriptionBackend
+from messaging.voice_backend import TranscriptionBackend
 
 if TYPE_CHECKING:
     from messaging.platforms.base import MessagingPlatform
 
 
-def build_messaging_platform_options(settings: Settings) -> MessagingPlatformOptions:
+def build_messaging_platform_options(
+    settings: Settings, *, nim_transcription_backend: TranscriptionBackend
+) -> MessagingPlatformOptions:
     """Map :class:`~config.settings.Settings` into platform factory knobs."""
     return MessagingPlatformOptions(
         telegram_bot_token=settings.telegram_bot_token,
@@ -35,7 +37,7 @@ def build_messaging_platform_options(settings: Settings) -> MessagingPlatformOpt
         whisper_device=settings.whisper_device,
         hf_token=settings.hf_token,
         nvidia_nim_api_key=settings.nvidia_nim_api_key,
-        nim_transcription_backend=NvidiaNimTranscriptionBackend(),
+        nim_transcription_backend=nim_transcription_backend,
         messaging_rate_limit=settings.messaging_rate_limit,
         messaging_rate_window=settings.messaging_rate_window,
         log_raw_messaging_content=settings.log_raw_messaging_content,
@@ -44,11 +46,15 @@ def build_messaging_platform_options(settings: Settings) -> MessagingPlatformOpt
     )
 
 
-def create_optional_messaging_platform(settings: Settings) -> MessagingPlatform | None:
+def create_optional_messaging_platform(
+    settings: Settings, *, nim_transcription_backend: TranscriptionBackend
+) -> MessagingPlatform | None:
     """Return Telegram/Discord platform when configured (not started yet)."""
     return create_messaging_platform(
         settings.messaging_platform,
-        build_messaging_platform_options(settings),
+        build_messaging_platform_options(
+            settings, nim_transcription_backend=nim_transcription_backend
+        ),
     )
 
 

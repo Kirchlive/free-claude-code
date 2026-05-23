@@ -8,8 +8,8 @@ from starlette.datastructures import State
 
 from api.dependencies import (
     cleanup_provider,
-    get_provider,
-    get_provider_for_type,
+    get_process_cached_provider,
+    get_process_cached_provider_for_type,
     get_settings,
     resolve_provider,
 )
@@ -26,7 +26,7 @@ from providers.wafer import WaferProvider
 
 
 def _make_mock_settings(**overrides):
-    """Create a mock settings object with all required fields for get_provider()."""
+    """Create a mock settings object with all required fields for get_process_cached_provider()."""
     mock = MagicMock()
     mock.model = "nvidia_nim/meta/llama3"
     mock.provider_type = "nvidia_nim"
@@ -70,12 +70,12 @@ def reset_provider():
 
 
 @pytest.mark.asyncio
-async def test_get_provider_singleton():
+async def test_get_process_cached_provider_singleton():
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings()
 
-        p1 = get_provider()
-        p2 = get_provider()
+        p1 = get_process_cached_provider()
+        p2 = get_process_cached_provider()
 
         assert isinstance(p1, NvidiaNimProvider)
         assert p1 is p2
@@ -96,7 +96,7 @@ async def test_cleanup_provider():
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings()
 
-        provider = get_provider()
+        provider = get_process_cached_provider()
         assert isinstance(provider, NvidiaNimProvider)
         provider._client = AsyncMock()
 
@@ -110,7 +110,7 @@ async def test_cleanup_provider_no_client():
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings()
 
-        provider = get_provider()
+        provider = get_process_cached_provider()
         if hasattr(provider, "_client"):
             del provider._client
 
@@ -119,12 +119,12 @@ async def test_cleanup_provider_no_client():
 
 
 @pytest.mark.asyncio
-async def test_get_provider_open_router():
+async def test_get_process_cached_provider_open_router():
     """Test that provider_type=open_router returns OpenRouterProvider."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings(provider_type="open_router")
 
-        provider = get_provider()
+        provider = get_process_cached_provider()
 
         assert isinstance(provider, OpenRouterProvider)
         assert provider._base_url == "https://openrouter.ai/api/v1"
@@ -132,24 +132,24 @@ async def test_get_provider_open_router():
 
 
 @pytest.mark.asyncio
-async def test_get_provider_lmstudio():
+async def test_get_process_cached_provider_lmstudio():
     """Test that provider_type=lmstudio returns LMStudioProvider."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings(provider_type="lmstudio")
 
-        provider = get_provider()
+        provider = get_process_cached_provider()
 
         assert isinstance(provider, LMStudioProvider)
         assert provider._base_url == "http://localhost:1234/v1"
 
 
 @pytest.mark.asyncio
-async def test_get_provider_ollama():
+async def test_get_process_cached_provider_ollama():
     """Test that provider_type=ollama returns OllamaProvider without an API key."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings(provider_type="ollama")
 
-        provider = get_provider()
+        provider = get_process_cached_provider()
 
         assert isinstance(provider, OllamaProvider)
         assert provider._base_url == "http://localhost:11434"
@@ -157,12 +157,12 @@ async def test_get_provider_ollama():
 
 
 @pytest.mark.asyncio
-async def test_get_provider_deepseek():
+async def test_get_process_cached_provider_deepseek():
     """Test that provider_type=deepseek returns DeepSeekProvider."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings(provider_type="deepseek")
 
-        provider = get_provider()
+        provider = get_process_cached_provider()
 
         assert isinstance(provider, DeepSeekProvider)
         assert provider._base_url == "https://api.deepseek.com/anthropic"
@@ -171,21 +171,21 @@ async def test_get_provider_deepseek():
 
 
 @pytest.mark.asyncio
-async def test_get_provider_deepseek_uses_fixed_base_url():
+async def test_get_process_cached_provider_deepseek_uses_fixed_base_url():
     """DeepSeek provider always uses the fixed provider base URL."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings(
             provider_type="deepseek",
         )
 
-        provider = get_provider()
+        provider = get_process_cached_provider()
 
         assert isinstance(provider, DeepSeekProvider)
         assert provider._base_url == "https://api.deepseek.com/anthropic"
 
 
 @pytest.mark.asyncio
-async def test_get_provider_deepseek_passes_enable_model_thinking():
+async def test_get_process_cached_provider_deepseek_passes_enable_model_thinking():
     """DeepSeek provider receives the fallback thinking toggle."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings(
@@ -193,19 +193,19 @@ async def test_get_provider_deepseek_passes_enable_model_thinking():
             enable_model_thinking=False,
         )
 
-        provider = get_provider()
+        provider = get_process_cached_provider()
 
         assert isinstance(provider, DeepSeekProvider)
         assert provider._config.enable_thinking is False
 
 
 @pytest.mark.asyncio
-async def test_get_provider_wafer():
+async def test_get_process_cached_provider_wafer():
     """Test that provider_type=wafer returns WaferProvider."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings(provider_type="wafer")
 
-        provider = get_provider()
+        provider = get_process_cached_provider()
 
         assert isinstance(provider, WaferProvider)
         assert provider._base_url == "https://pass.wafer.ai/v1"
@@ -213,7 +213,7 @@ async def test_get_provider_wafer():
 
 
 @pytest.mark.asyncio
-async def test_get_provider_lmstudio_uses_lm_studio_base_url():
+async def test_get_process_cached_provider_lmstudio_uses_lm_studio_base_url():
     """LM Studio provider uses lm_studio_base_url from settings."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings(
@@ -221,14 +221,14 @@ async def test_get_provider_lmstudio_uses_lm_studio_base_url():
             lm_studio_base_url="http://custom:9999/v1",
         )
 
-        provider = get_provider()
+        provider = get_process_cached_provider()
 
         assert isinstance(provider, LMStudioProvider)
         assert provider._base_url == "http://custom:9999/v1"
 
 
 @pytest.mark.asyncio
-async def test_get_provider_passes_http_timeouts_from_settings():
+async def test_get_process_cached_provider_passes_http_timeouts_from_settings():
     """Provider receives http timeouts from settings when creating client."""
     with (
         patch("api.dependencies.get_settings") as mock_settings,
@@ -239,7 +239,7 @@ async def test_get_provider_passes_http_timeouts_from_settings():
             http_write_timeout=20.0,
             http_connect_timeout=5.0,
         )
-        provider = get_provider()
+        provider = get_process_cached_provider()
         assert isinstance(provider, NvidiaNimProvider)
         call_kwargs = mock_openai.call_args[1]
         timeout = call_kwargs["timeout"]
@@ -249,7 +249,7 @@ async def test_get_provider_passes_http_timeouts_from_settings():
 
 
 @pytest.mark.asyncio
-async def test_get_provider_passes_proxy_from_settings():
+async def test_get_process_cached_provider_passes_proxy_from_settings():
     """Provider receives configured proxy and builds a proxied HTTP client."""
     with (
         patch("api.dependencies.get_settings") as mock_settings,
@@ -260,7 +260,7 @@ async def test_get_provider_passes_proxy_from_settings():
             nvidia_nim_proxy="http://proxy.example:8080"
         )
 
-        provider = get_provider()
+        provider = get_process_cached_provider()
 
         assert isinstance(provider, NvidiaNimProvider)
         mock_http_client.assert_called_once()
@@ -271,7 +271,7 @@ async def test_get_provider_passes_proxy_from_settings():
 
 
 @pytest.mark.asyncio
-async def test_get_provider_ignores_non_string_proxy_value():
+async def test_get_process_cached_provider_ignores_non_string_proxy_value():
     """Mock settings without proxy attrs should not fail provider construction."""
     with (
         patch("api.dependencies.get_settings") as mock_settings,
@@ -281,20 +281,20 @@ async def test_get_provider_ignores_non_string_proxy_value():
             nvidia_nim_proxy=MagicMock(name="proxy")
         )
 
-        provider = get_provider()
+        provider = get_process_cached_provider()
 
         assert isinstance(provider, NvidiaNimProvider)
         assert mock_openai.call_args.kwargs["http_client"] is None
 
 
 @pytest.mark.asyncio
-async def test_get_provider_nvidia_nim_missing_api_key():
+async def test_get_process_cached_provider_nvidia_nim_missing_api_key():
     """NVIDIA NIM with empty API key raises HTTPException 503."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings(nvidia_nim_api_key="")
 
         with pytest.raises(ProviderResolutionAuthFailure) as exc_info:
-            get_provider()
+            get_process_cached_provider()
 
         assert exc_info.value.status_code == 503
         assert "NVIDIA_NIM_API_KEY" in exc_info.value.detail
@@ -302,20 +302,20 @@ async def test_get_provider_nvidia_nim_missing_api_key():
 
 
 @pytest.mark.asyncio
-async def test_get_provider_nvidia_nim_whitespace_only_api_key():
+async def test_get_process_cached_provider_nvidia_nim_whitespace_only_api_key():
     """NVIDIA NIM with whitespace-only API key raises HTTPException 503."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings(nvidia_nim_api_key="   ")
 
         with pytest.raises(ProviderResolutionAuthFailure) as exc_info:
-            get_provider()
+            get_process_cached_provider()
 
         assert exc_info.value.status_code == 503
         assert "NVIDIA_NIM_API_KEY" in exc_info.value.detail
 
 
 @pytest.mark.asyncio
-async def test_get_provider_open_router_missing_api_key():
+async def test_get_process_cached_provider_open_router_missing_api_key():
     """OpenRouter with empty API key raises HTTPException 503."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings(
@@ -324,7 +324,7 @@ async def test_get_provider_open_router_missing_api_key():
         )
 
         with pytest.raises(ProviderResolutionAuthFailure) as exc_info:
-            get_provider()
+            get_process_cached_provider()
 
         assert exc_info.value.status_code == 503
         assert "OPENROUTER_API_KEY" in exc_info.value.detail
@@ -332,7 +332,7 @@ async def test_get_provider_open_router_missing_api_key():
 
 
 @pytest.mark.asyncio
-async def test_get_provider_deepseek_missing_api_key():
+async def test_get_process_cached_provider_deepseek_missing_api_key():
     """DeepSeek with empty API key raises HTTPException 503."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings(
@@ -341,7 +341,7 @@ async def test_get_provider_deepseek_missing_api_key():
         )
 
         with pytest.raises(ProviderResolutionAuthFailure) as exc_info:
-            get_provider()
+            get_process_cached_provider()
 
         assert exc_info.value.status_code == 503
         assert "DEEPSEEK_API_KEY" in exc_info.value.detail
@@ -349,7 +349,7 @@ async def test_get_provider_deepseek_missing_api_key():
 
 
 @pytest.mark.asyncio
-async def test_get_provider_wafer_missing_api_key():
+async def test_get_process_cached_provider_wafer_missing_api_key():
     """Wafer with empty API key raises HTTPException 503."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings(
@@ -358,7 +358,7 @@ async def test_get_provider_wafer_missing_api_key():
         )
 
         with pytest.raises(ProviderResolutionAuthFailure) as exc_info:
-            get_provider()
+            get_process_cached_provider()
 
         assert exc_info.value.status_code == 503
         assert "WAFER_API_KEY" in exc_info.value.detail
@@ -366,13 +366,13 @@ async def test_get_provider_wafer_missing_api_key():
 
 
 @pytest.mark.asyncio
-async def test_get_provider_unknown_type():
+async def test_get_process_cached_provider_unknown_type():
     """Unknown ``provider_type`` raises :exc:`~providers.exceptions.UnknownProviderTypeError`."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings(provider_type="unknown")
 
         with pytest.raises(UnknownProviderTypeError, match="Unknown provider_type"):
-            get_provider()
+            get_process_cached_provider()
 
 
 @pytest.mark.asyncio
@@ -381,7 +381,7 @@ async def test_cleanup_provider_close_raises():
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings()
 
-        provider = get_provider()
+        provider = get_process_cached_provider()
         assert isinstance(provider, NvidiaNimProvider)
         provider._client = AsyncMock()
         provider._client.close = AsyncMock(side_effect=RuntimeError("cleanup failed"))
@@ -395,26 +395,26 @@ async def test_cleanup_provider_close_raises():
 
 
 @pytest.mark.asyncio
-async def test_get_provider_for_type_caches():
-    """get_provider_for_type returns cached provider on second call."""
+async def test_get_process_cached_provider_for_type_caches():
+    """get_process_cached_provider_for_type returns cached provider on second call."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings()
 
-        p1 = get_provider_for_type("nvidia_nim")
-        p2 = get_provider_for_type("nvidia_nim")
+        p1 = get_process_cached_provider_for_type("nvidia_nim")
+        p2 = get_process_cached_provider_for_type("nvidia_nim")
 
         assert p1 is p2
         assert isinstance(p1, NvidiaNimProvider)
 
 
 @pytest.mark.asyncio
-async def test_get_provider_for_type_different_types():
-    """get_provider_for_type creates separate providers per type."""
+async def test_get_process_cached_provider_for_type_different_types():
+    """get_process_cached_provider_for_type creates separate providers per type."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings()
 
-        nim = get_provider_for_type("nvidia_nim")
-        lmstudio = get_provider_for_type("lmstudio")
+        nim = get_process_cached_provider_for_type("nvidia_nim")
+        lmstudio = get_process_cached_provider_for_type("lmstudio")
 
         assert isinstance(nim, NvidiaNimProvider)
         assert isinstance(lmstudio, LMStudioProvider)
@@ -422,13 +422,13 @@ async def test_get_provider_for_type_different_types():
 
 
 @pytest.mark.asyncio
-async def test_get_provider_for_type_missing_key_raises_503():
-    """get_provider_for_type raises HTTPException 503 for missing API key."""
+async def test_get_process_cached_provider_for_type_missing_key_raises_503():
+    """get_process_cached_provider_for_type raises HTTPException 503 for missing API key."""
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings(open_router_api_key="")
 
         with pytest.raises(ProviderResolutionAuthFailure) as exc_info:
-            get_provider_for_type("open_router")
+            get_process_cached_provider_for_type("open_router")
 
         assert exc_info.value.status_code == 503
         assert "OPENROUTER_API_KEY" in exc_info.value.detail
@@ -440,8 +440,8 @@ async def test_cleanup_provider_cleans_all():
     with patch("api.dependencies.get_settings") as mock_settings:
         mock_settings.return_value = _make_mock_settings()
 
-        nim = get_provider_for_type("nvidia_nim")
-        lmstudio = get_provider_for_type("lmstudio")
+        nim = get_process_cached_provider_for_type("nvidia_nim")
+        lmstudio = get_process_cached_provider_for_type("lmstudio")
 
         assert isinstance(nim, NvidiaNimProvider)
         assert isinstance(lmstudio, LMStudioProvider)

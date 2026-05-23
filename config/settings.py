@@ -1,11 +1,10 @@
 """Centralized configuration using Pydantic Settings."""
 
-import os
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any
 
-from pydantic import computed_field, field_validator, model_validator
+from pydantic import computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .admin_optimization_settings import AdminOptimizationSettings
@@ -25,11 +24,10 @@ from .settings_bundles import (
     build_server_runtime_bundle,
     build_web_fetch_bundle,
 )
+from .settings_coherence_mixins import SettingsCoherenceValidatorsMixin
 from .settings_credentials import ProviderCredentialsMixin
 from .settings_env import (
-    dotenv_last_value_for_key,
     env_files_list,
-    removed_env_var_migration_error,
 )
 from .settings_http import HttpAndThroughputMixin
 from .settings_local_providers import LocalProviderEndpointsMixin
@@ -78,17 +76,10 @@ class Settings(
     VoiceNoteMixin,
     MessagingAndBotsMixin,
     ServerBindMixin,
+    SettingsCoherenceValidatorsMixin,
     BaseSettings,
 ):
     """Application settings loaded from environment variables."""
-
-    @model_validator(mode="before")
-    @classmethod
-    def reject_removed_env_vars(cls, data: Any) -> Any:
-        """Fail fast when removed environment variables are still configured."""
-        if message := removed_env_var_migration_error(cls.model_config):
-            raise ValueError(message)
-        return data
 
     @field_validator(
         "telegram_bot_token",
@@ -158,38 +149,6 @@ class Settings(
     @classmethod
     def validate_model_format(cls, v: str | None) -> str | None:
         return validate_gateway_model_prefixed(v)
-
-    @model_validator(mode="after")
-    def check_nvidia_nim_api_key(self) -> Settings:
-        if (
-            self.voice_note_enabled
-            and self.whisper_device == "nvidia_nim"
-            and not self.nvidia_nim_api_key.strip()
-        ):
-            raise ValueError(
-                "NVIDIA_NIM_API_KEY is required when WHISPER_DEVICE is 'nvidia_nim'. "
-                "Set it in your .env file."
-            )
-        return self
-
-    @model_validator(mode="after")
-    def prefer_dotenv_anthropic_auth_token(self) -> Settings:
-        """Let explicit .env auth config override stale shell/client tokens."""
-        dotenv_value = dotenv_last_value_for_key(
-            self.model_config, "ANTHROPIC_AUTH_TOKEN"
-        )
-        if dotenv_value is not None:
-            self.anthropic_auth_token = dotenv_value
-        return self
-
-    def uses_process_anthropic_auth_token(self) -> bool:
-        """Return whether proxy auth came from process env, not dotenv config."""
-        if (
-            dotenv_last_value_for_key(self.model_config, "ANTHROPIC_AUTH_TOKEN")
-            is not None
-        ):
-            return False
-        return bool(os.environ.get("ANTHROPIC_AUTH_TOKEN"))
 
     @property
     def provider_type(self) -> str:

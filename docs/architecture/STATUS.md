@@ -4,7 +4,7 @@ Snapshot of items from [IMPROVEMENT_PLAN Definition of done](IMPROVEMENT_PLAN.md
 
 | Criterion | Status | Notes |
 |-----------|--------|-------|
-| `config/settings.py` composition hub (~290 lines target) | Partial | Mixins in `config/settings_*.py`; validators [`config/settings_validators.py`](../../config/settings_validators.py); bundle builders [`config/settings_bundles.py`](../../config/settings_bundles.py); dotenv guards [`config/settings_env.py`](../../config/settings_env.py); [`config/settings.py`](../../config/settings.py) hub ~326 lines (routing to `settings_*` modules; further slimming optional). |
+| `config/settings.py` composition hub (~290 lines target) | Partial | Mixins + cross-field validators in [`config/settings_coherence_mixins.py`](../../config/settings_coherence_mixins.py); bundle builders [`config/settings_bundles.py`](../../config/settings_bundles.py); hub [`config/settings.py`](../../config/settings.py) ~285 lines (`uv run wc -l` target); incremental slim-down optional. |
 | `core/anthropic/conversion/_conversion.py` removed | Done | Submodules live under [`core/anthropic/conversion/](../../core/anthropic/conversion/). |
 | At least four OpenAI-chat providers use catalog factory | Done | See [`providers/registry_factories.py`](../../providers/registry_factories.py) (`_instantiate_catalog_openai_chat`, catalog-bound partials); re-exported from [`providers/registry.py`](../../providers/registry.py). |
 | `api/runtime.py` under ~220 lines; bootstrap in `messaging/bootstrap.py` | Done | Lifecycle helpers [`api/runtime_lifecycle.py`](../../api/runtime_lifecycle.py); [`api/runtime.py`](../../api/runtime.py) ~185 lines. Bootstrap in [`messaging/bootstrap.py`](../../messaging/bootstrap.py). |

@@ -10,14 +10,14 @@ This repo is a layered Python layout. **Imports are enforced by** `tests/contrac
 | `core` | Neutral Anthropic protocol, SSE, and conversion helpers. Must not import product packages (`api`, `messaging`, `cli`, `providers`, `config`, `smoke`). |
 | `providers` | Upstream adapters and `ProviderRegistry`. Must not import `api`, `messaging`, or `cli`. |
 | `api` | FastHTTP layer, admin UI, orchestration wiring orientation: [api-package.md](api-package.md). Must only import a **narrow** `providers` facade (see contract test `_API_ALLOWED_PROVIDER_MODULES`). |
-| `messaging` | Optional Discord/Telegram runtime. Wired from `AppRuntime`; must not import `api` or `cli`. Only `providers.nvidia_nim.transcription_backend` may be imported (`_MESSAGING_ALLOWED_PROVIDER_MODULES`). |
+| `messaging` | Optional Discord/Telegram runtime. Wired from `AppRuntime`; must not import `api`, `cli`, or **`providers.*`** (inject `TranscriptionBackend` from `AppRuntime`; see [messaging.md](messaging.md)). |
 | `cli` | Entry points (`fcc-server`, etc.). May import only `api.app` / `api.admin_urls` plus non-API packages. |
 
 ## Provider resolution
 
 1. **HTTP requests:** Use `resolve_provider(provider_type, app=request.app, settings=...)` from `api.dependencies`. The app-mounted `ProviderRegistry` lives at `app.state.provider_registry` after `AppRuntime.startup`.
 
-2. **Scripts / unit tests without an app:** Use `get_process_cached_provider*` (legacy aliases still export `get_provider` / `get_provider_for_type`) backed by `api.provider_process_cache.PROCESS_PROVIDERS`.
+2. **Scripts / unit tests without an app:** Use **`get_process_cached_provider`** / **`get_process_cached_provider_for_type`** via [`api.dependencies`](../../api/dependencies.py), backed by `api.provider_process_cache.PROCESS_PROVIDERS`.
 
 3. After admin **Apply** or CLI init touching env: call `reload_settings()` from `config.settings` so cached settings refresh (`api/admin_routes.py`, `cli/entrypoints.py`, `smoke/lib/config.py` follow this invariant).
 

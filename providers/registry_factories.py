@@ -63,33 +63,66 @@ def _create_wafer(config: ProviderConfig, _settings: Settings) -> BaseProvider:
     return WaferProvider(config)
 
 
-def _instantiate_catalog_openai_chat(
-    provider_id: str, config: ProviderConfig, _settings: Settings
+_CatalogOpenAiInner = Callable[[ProviderConfig, Settings], BaseProvider]
+
+
+def _openai_chat_opencode_go(
+    config: ProviderConfig, _settings: Settings
 ) -> BaseProvider:
-    """Construct catalog-backed OpenAI chat providers (see ``openai_request_module``)."""
-    if provider_id == "opencode_go":
-        from providers.opencode import OpenCodeProvider
+    from providers.opencode import OpenCodeProvider
 
-        return OpenCodeProvider(config, provider_name="OPENCODE_GO")
-    if provider_id == "opencode":
-        from providers.opencode import OpenCodeProvider
+    return OpenCodeProvider(config, provider_name="OPENCODE_GO")
 
-        return OpenCodeProvider(config)
-    if provider_id == "kimi":
-        from providers.kimi import KimiProvider
 
-        return KimiProvider(config)
-    if provider_id == "fireworks":
-        from providers.fireworks import FireworksProvider
+def _openai_chat_opencode(config: ProviderConfig, _settings: Settings) -> BaseProvider:
+    from providers.opencode import OpenCodeProvider
 
-        return FireworksProvider(config)
-    if provider_id == "zai":
-        from providers.zai import ZaiProvider
+    return OpenCodeProvider(config)
 
-        return ZaiProvider(config)
+
+def _openai_chat_kimi(config: ProviderConfig, _settings: Settings) -> BaseProvider:
+    from providers.kimi import KimiProvider
+
+    return KimiProvider(config)
+
+
+def _openai_chat_fireworks(config: ProviderConfig, _settings: Settings) -> BaseProvider:
+    from providers.fireworks import FireworksProvider
+
+    return FireworksProvider(config)
+
+
+def _openai_chat_zai(config: ProviderConfig, _settings: Settings) -> BaseProvider:
+    from providers.zai import ZaiProvider
+
+    return ZaiProvider(config)
+
+
+def _catalog_openai_chat_fallback(
+    provider_id: str, config: ProviderConfig
+) -> BaseProvider:
     from providers.openai_chat_adapter import CatalogOpenAIChatProvider
 
     return CatalogOpenAIChatProvider(provider_id, config)
+
+
+_CATALOG_OPENAI_CHAT_BY_ID: dict[str, _CatalogOpenAiInner] = {
+    "opencode_go": _openai_chat_opencode_go,
+    "opencode": _openai_chat_opencode,
+    "kimi": _openai_chat_kimi,
+    "fireworks": _openai_chat_fireworks,
+    "zai": _openai_chat_zai,
+}
+
+
+def _instantiate_catalog_openai_chat(
+    provider_id: str, config: ProviderConfig, settings: Settings
+) -> BaseProvider:
+    """Construct catalog-backed OpenAI chat providers (see ``openai_request_module``)."""
+    maker = _CATALOG_OPENAI_CHAT_BY_ID.get(provider_id)
+    if maker is not None:
+        return maker(config, settings)
+    return _catalog_openai_chat_fallback(provider_id, config)
 
 
 def _create_catalog_openai_chat(

@@ -397,7 +397,7 @@ Important pieces:
 ### Architecture (composition)
 
 - **Entry points:** packaged **`fcc-server`** / **`fcc-claude`** (see `cli/entrypoints.py`) load the FastAPI ASGI stack; **`server.py`** is the uvicorn-compatible shim exporting `create_asgi_app()`.
-- **`api.runtime.AppRuntime`** is the lifespan owner: attaches `provider_registry` to **`request.app.state`**, starts optional Telegram/Discord by injecting **`MessagingPlatformOptions.nim_transcription_backend`**, restores tree sessions, and coordinates shutdown cleanup.
+- **`api.runtime.AppRuntime`** is the lifespan owner: attaches `provider_registry` to **`request.app.state`**, starts optional Telegram/Discord with a **`MessagingPlatformOptions`** built by [`messaging/bootstrap.py`](messaging/bootstrap.py) and **`NvidiaNimTranscriptionBackend`** constructed at composition root (`api/runtime`), restores tree sessions, and coordinates shutdown cleanup.
 - **Living map:** committed canvas [`canvases/entity-architecture-map.canvas.tsx`](canvases/entity-architecture-map.canvas.tsx) — whenever you move modules or composition wiring, refresh the canvas row titles in the **same hygiene pass** as the import contract suites below.
 - **Contracts:** layered import rules live in **`tests/contracts/test_import_boundaries.py`** and **`tests/contracts/test_architecture_contracts.py`**; keep both green on refactors.
 - **HTTP errors:** FastAPI `{detail}` for ingress/resolver auth failures vs Anthropic `{type,error}` for uncaught `ProviderError` → **`docs/architecture/api-package.md`** (section *HTTP error shapes*).

@@ -42,7 +42,7 @@ Admin, web tools, and optimizations branch **before** ``message_create_pipeline`
 
 - From route handlers call `resolve_provider(..., app=request.app, settings=settings)` via [`dependencies.resolve_provider`](../../api/dependencies.py). The registry must exist on **`app.state.provider_registry`** after [`AppRuntime.startup`](../../api/runtime.py).
 
-- Scripts, smoke, unit tests **without** a Starlette app use `get_process_cached_provider*` and [`api.provider_process_cache`](../../api/provider_process_cache.py). Do **not** use those shortcuts from **`api.routes`** or **`api.services`**.
+- Scripts, smoke, and isolated unit scenarios **without** a Starlette app use **`get_process_cached_provider*`** via [`dependencies`](../../api/dependencies.py) (backed by [`api.provider_process_cache`](../../api/provider_process_cache.py)). Do **not** use those helpers from **`api.routes`** / **`api.services`**; do **not** import `PROCESS_PROVIDERS` or **`api.provider_process_cache`** elsewhere under `api/` (contract: [`test_http_provider_resolution_contracts.py`](../../tests/contracts/test_http_provider_resolution_contracts.py)).
 
 See also [layers.md — Provider resolution](layers.md).
 
@@ -61,3 +61,4 @@ Patch the **same module attribute the code under test imported**, not necessaril
 - [admin.md](admin.md) — Admin trust boundary and env split modules.
 - [deferred_milestones.md](deferred_milestones.md) — out-of-scope architectural milestones.
 - [STATUS.md](STATUS.md) — program checklist vs repo.
+- [api-module-clusters.md](api-module-clusters.md) — navigation map before large `api/` reshuffles.

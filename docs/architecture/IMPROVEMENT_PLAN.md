@@ -90,7 +90,7 @@ flowchart LR
 
 - Layer diagram
 - Allowed imports per package
-- Provider resolution: `resolve_provider(app=...)` vs `get_provider()` process cache
+- Provider resolution: `resolve_provider(app=...)` vs `get_process_cached_provider()` process cache
 - Settings reload: `get_settings.cache_clear()` call sites (`api/admin_routes.py`, `cli/entrypoints.py`, `smoke/lib/config.py`)
 
 **Create:** `docs/architecture/messaging.md` (bounded contexts)
@@ -360,14 +360,14 @@ Only `messaging/bootstrap.py` imports `providers.nvidia_nim.transcription_backen
 
 ## Phase 5 — DI clarity and small API polish
 
-### 5.1 Rename process-cache helpers
+### 5.1 Process-cache helper names (**done** — deprecated aliases removed)
 
-| Old | New |
-|-----|-----|
-| `get_provider()` | `get_process_cached_provider()` |
-| `get_provider_for_type()` | `get_process_cached_provider_for_type()` |
+Use only:
 
-Keep **deprecated aliases** for one release. Update tests and contract needles.
+- **`get_process_cached_provider()`**
+- **`get_process_cached_provider_for_type()`**
+
+Contract coverage: **`tests/contracts/test_http_provider_resolution_contracts.py`** and **`tests/contracts/test_process_provider_helpers_import_allowlist.py`**.
 
 ### 5.2 Exception handlers use request-scoped settings
 
@@ -383,7 +383,7 @@ If touching persistence in Phase 1:
 
 ### Acceptance (Phase 5)
 
-- [ ] Contract: `api.routes` / `api.services` still have **no** `get_provider(`
+- [ ] Contract: `api.routes` / `api.services` still have **no** `get_process_cached_provider(`
 - [ ] CI green
 
 ### PR

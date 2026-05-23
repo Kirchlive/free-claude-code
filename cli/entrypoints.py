@@ -64,6 +64,9 @@ def serve() -> None:
         except KeyboardInterrupt:
             return
     finally:
+        from core.observability import set_trace_dispatch
+
+        set_trace_dispatch(None)
         kill_all_best_effort()
 
 

@@ -39,7 +39,7 @@ def mock_rate_limiter():
     async def _slot():
         yield
 
-    with patch("providers.anthropic_messages.GlobalRateLimiter") as mock:
+    with patch("providers.anthropic_messages_transport.GlobalRateLimiter") as mock:
         instance = mock.get_scoped_instance.return_value
 
         async def _passthrough(fn, *args, **kwargs):
@@ -170,9 +170,9 @@ async def test_native_stream_failure_logs_exclude_exception_str_by_default(
         ]
     )
 
-    async def boom(_self, _response):
+    async def boom(_self, _response, *, state=None, thinking_enabled=False):
         raise RuntimeError("SECRET_DETAIL")
-        if False:
+        if False:  # pragma: no cover — makes ``boom`` an async generator for patching
             yield ""
 
     with (
@@ -183,7 +183,7 @@ async def test_native_stream_failure_logs_exclude_exception_str_by_default(
             new_callable=AsyncMock,
             return_value=response,
         ),
-        patch.object(AnthropicMessagesTransport, "_iter_sse_events", boom),
+        patch.object(AnthropicMessagesTransport, "_iter_stream_chunks", boom),
         caplog.at_level(logging.ERROR),
     ):
         _ = [e async for e in provider.stream_response(req)]

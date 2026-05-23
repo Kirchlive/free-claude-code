@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict
+
+StructuredTraceSink = Literal["default", "noop"]
 
 
 class ObservabilitySettings(BaseModel):
@@ -18,3 +22,4 @@ class ObservabilitySettings(BaseModel):
     log_messaging_error_details: bool
     debug_platform_edits: bool
     debug_subagent_stack: bool
+    structured_trace_sink: StructuredTraceSink

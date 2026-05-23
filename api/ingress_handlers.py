@@ -1,18 +1,7 @@
-"""Central registration of ingress exception → HTTP response mapping."""
+"""Stable import paths for ingress exception handlers (implementation in :mod:`api.ingress`)."""
 
 from __future__ import annotations
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from api.ingress.handlers import register_ingress_exception_handlers
 
-from .ingress_errors import IngressDetailError
-
-
-def register_ingress_exception_handlers(app: FastAPI) -> None:
-    """Map :class:`IngressDetailError` to the legacy ``{"detail": ...}`` JSON shape."""
-
-    @app.exception_handler(IngressDetailError)
-    async def _ingress_detail_handler(
-        _request: Request, exc: IngressDetailError
-    ) -> JSONResponse:
-        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+__all__ = ["register_ingress_exception_handlers"]

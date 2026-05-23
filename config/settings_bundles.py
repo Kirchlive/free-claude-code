@@ -34,6 +34,7 @@ def build_observability_bundle(settings: Settings) -> ObservabilitySettings:
         log_messaging_error_details=settings.log_messaging_error_details,
         debug_platform_edits=settings.debug_platform_edits,
         debug_subagent_stack=settings.debug_subagent_stack,
+        structured_trace_sink=settings.structured_trace_sink,
     )
 
 

@@ -12,15 +12,16 @@ Orchestration and HTTP-facing code for the Claude-compatible gateway lives under
 | [`api/runtime.py`](../../api/runtime.py) | `AppRuntime` lifecycle: startup/shutdown ordering, registering `provider_registry` on `app.state`. |
 | [`api/messaging_startup.py`](../../api/messaging_startup.py) | Messaging stack wired **after** platform bootstrap from `messaging`: CLI session manager, handler, `platform.start()`. Keeps [`messaging/bootstrap.py`](../../messaging/bootstrap.py) free of `cli` imports (import contract). |
 | [`api/dependencies.py`](../../api/dependencies.py) | `resolve_provider`, process-cache helpers, `require_api_key`, `get_settings`. |
-| [`api/ingress_errors.py`](../../api/ingress_errors.py) | Ingress domain errors (resolution + gateway proxy auth) mapped to `{"detail": ...}` by [`api/ingress_handlers.py`](../../api/ingress_handlers.py). |
+| [`api/ingress/errors.py`](../../api/ingress/errors.py) (+ stable shim [`api/ingress_errors.py`](../../api/ingress_errors.py)) | Ingress domain errors (resolution + gateway proxy auth) mapped to `{"detail": ...}` by [`api/ingress/handlers.py`](../../api/ingress/handlers.py) (shim [`api/ingress_handlers.py`](../../api/ingress_handlers.py)). |
 | [`admin_routes.py`](../../api/admin_routes.py), [`admin/`](../../api/admin/) | Admin UI manifests, persistence, routing. |
 
 ## HTTP error shapes
 
 - **Ingress** (before an upstream stream starts): [`api.dependencies`](../../api/dependencies.py)
-  raises subclasses of [`IngressDetailError`](../../api/ingress_errors.py) (e.g. missing/invalid
+  raises subclasses of [`IngressDetailError`](../../api/ingress/errors.py) (stable import also
+  [`api.ingress_errors.IngressDetailError`](../../api/ingress_errors.py)) (e.g. missing/invalid
   proxy API key, curated provider credential failures while resolving the registry).
-  [`register_ingress_exception_handlers`](../../api/ingress_handlers.py) turns these into
+  [`register_ingress_exception_handlers`](../../api/ingress/handlers.py) (shim [`api.ingress_handlers`](../../api/ingress_handlers.py)) turns these into
   `JSONResponse` bodies `{"detail": "<message>"}` (401 for gateway auth; 503 for resolution
   auth), matching the legacy `HTTPException` shape. [`ClaudeProxyService`](../../api/services.py)
   re-raises ingress errors instead of translating them into generic 500 responses.

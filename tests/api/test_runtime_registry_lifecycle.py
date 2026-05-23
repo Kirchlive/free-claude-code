@@ -31,6 +31,7 @@ _RUNTIME_EXTRAS = {
     "log_raw_cli_diagnostics": False,
     "log_messaging_error_details": False,
     "configured_chat_model_refs": lambda: (),
+    "structured_trace_sink": "default",
 }
 
 

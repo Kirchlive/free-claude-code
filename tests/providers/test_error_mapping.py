@@ -173,7 +173,7 @@ def test_user_visible_message_for_mapped_provider_error_405():
 def test_streaming_transports_pass_scoped_rate_limiter_to_map_error():
     """Guardrail: streaming adapters must scope reactive 429 handling per provider."""
     root = Path(__file__).resolve().parents[2]
-    for name in ("anthropic_messages.py", "openai_compat.py"):
+    for name in ("anthropic_messages_transport.py", "openai_compat.py"):
         text = (root / "providers" / name).read_text(encoding="utf-8")
         assert "map_error(" in text, name
         assert "rate_limiter=self._global_rate_limiter" in text, name

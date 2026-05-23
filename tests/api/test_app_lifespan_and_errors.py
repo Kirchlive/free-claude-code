@@ -30,6 +30,7 @@ _RUNTIME_EXTRAS = {
     "log_raw_cli_diagnostics": False,
     "log_messaging_error_details": False,
     "configured_chat_model_refs": lambda: (),
+    "structured_trace_sink": "default",
 }
 
 
@@ -62,6 +63,53 @@ def test_warn_if_process_auth_token_skips_explicit_dotenv_config():
         api_runtime_mod.warn_if_process_auth_token(settings)
 
     warning.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_runtime_startup_wires_structured_trace_from_settings(tmp_path):
+    """``AppRuntime.startup`` installs :func:`api.trace_sink.apply_structured_trace_settings`."""
+    import api.runtime as api_runtime_mod
+    from core import observability
+    from core.trace import trace_event
+
+    settings = _app_settings(
+        messaging_platform="none",
+        telegram_bot_token=None,
+        allowed_telegram_user_id=None,
+        discord_bot_token=None,
+        allowed_discord_channels=None,
+        allowed_dir=str(tmp_path / "workspace"),
+        claude_workspace=str(tmp_path / "data"),
+        host="127.0.0.1",
+        port=9099,
+        structured_trace_sink="noop",
+    )
+    runtime = api_runtime_mod.AppRuntime(
+        app=FastAPI(), settings=cast(Settings, settings)
+    )
+    prior_sink = MagicMock()
+    observability.set_trace_dispatch(prior_sink)
+    prior_sink.reset_mock()
+    try:
+        with (
+            patch.object(
+                ProviderRegistry, "validate_configured_models", new=AsyncMock()
+            ),
+            patch.object(ProviderRegistry, "start_model_list_refresh"),
+            patch.object(ProviderRegistry, "cleanup", new=AsyncMock()),
+            patch(
+                "messaging.bootstrap.create_messaging_platform",
+                return_value=None,
+            ),
+            patch.object(
+                api_runtime_mod.logging, "getLogger", return_value=MagicMock()
+            ),
+        ):
+            await runtime.startup()
+        trace_event(stage="ingress", event="probe.ev", source="test")
+        prior_sink.assert_not_called()
+    finally:
+        await runtime.shutdown()
 
 
 @pytest.mark.asyncio

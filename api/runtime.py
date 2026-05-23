@@ -16,6 +16,10 @@ from api.runtime_lifecycle import (
     startup_failure_message,
     warn_if_process_auth_token,
 )
+from api.trace_sink import (
+    apply_structured_trace_settings,
+    reset_structured_trace_settings,
+)
 from config.settings import Settings, get_settings
 from providers.exceptions import ServiceUnavailableError
 from providers.registry import ProviderRegistry
@@ -60,6 +64,7 @@ class AppRuntime:
         self._provider_registry = ProviderRegistry()
         self.app.state.provider_registry = self._provider_registry
         try:
+            apply_structured_trace_settings(self.settings)
             warn_if_process_auth_token(self.settings)
             await self._validate_configured_models_best_effort()
             self._provider_registry.start_model_list_refresh(self.settings)
@@ -145,6 +150,7 @@ class AppRuntime:
                 log_verbose_errors=verbose,
             )
         await self._shutdown_limiter()
+        reset_structured_trace_settings()
         logger.info("Server shut down cleanly")
 
     async def _start_messaging_if_configured(self) -> None:

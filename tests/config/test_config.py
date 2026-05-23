@@ -70,6 +70,7 @@ class TestSettings:
         assert settings.log_raw_sse_events is False
         assert settings.debug_platform_edits is False
         assert settings.debug_subagent_stack is False
+        assert settings.structured_trace_sink == "default"
 
     def test_web_fetch_bundle_reflects_flat_settings(self, monkeypatch):
         from config.settings import Settings
@@ -96,6 +97,7 @@ class TestSettings:
         monkeypatch.setenv("LOG_RAW_API_PAYLOADS", "true")
         monkeypatch.setenv("LOG_RAW_CLI_DIAGNOSTICS", "true")
         monkeypatch.setenv("DEBUG_SUBAGENT_STACK", "true")
+        monkeypatch.setenv("STRUCTURED_TRACE_SINK", "noop")
 
         settings = Settings()
         bundle = settings.observability_bundle
@@ -104,6 +106,8 @@ class TestSettings:
         assert bundle.log_raw_cli_diagnostics is settings.log_raw_cli_diagnostics
         assert bundle.debug_subagent_stack is settings.debug_subagent_stack
         assert bundle.log_raw_sse_events is settings.log_raw_sse_events
+        assert bundle.structured_trace_sink == "noop"
+        assert bundle.structured_trace_sink is settings.structured_trace_sink
 
     def test_model_bot_and_admin_bundles_mirror_flat_settings(self, monkeypatch):
         from config.settings import Settings

@@ -401,6 +401,12 @@ Important pieces:
 - **Living map:** committed canvas [`canvases/entity-architecture-map.canvas.tsx`](canvases/entity-architecture-map.canvas.tsx) — whenever you move modules or composition wiring, refresh the canvas row titles in the **same hygiene pass** as the import contract suites below.
 - **Contracts:** layered import rules live in **`tests/contracts/test_import_boundaries.py`** and **`tests/contracts/test_architecture_contracts.py`**; keep both green on refactors.
 - **HTTP errors:** FastAPI `{detail}` for ingress/resolver auth failures vs Anthropic `{type,error}` for uncaught `ProviderError` → **`docs/architecture/api-package.md`** (section *HTTP error shapes*).
+
+### Provider resolution (HTTP vs scripts; Admin Apply)
+
+- **HTTP / ASGI routes:** Use `resolve_provider(..., app=request.app, settings=...)` from **`api.dependencies`**. The **`ProviderRegistry`** must exist on **`request.app.state.provider_registry`** after **`AppRuntime.startup`**. See [docs/architecture/layers.md — Provider resolution](docs/architecture/layers.md).
+- **Scripts, smoke, or unit tests without a Starlette app:** Use `resolve_provider(..., app=None, settings=...)` or `get_process_cached_provider*` helpers — same registry identity, backed by **`api.provider_process_cache`**. Do **not** use those cache shortcuts from **`api.routes`** / **`api.services`** when you have a live `request.app`.
+- **Admin Apply / env changes:** Call **`reload_settings()`** from **`config.settings`** so `get_settings()` cache clears, and keep **`AppRuntime`** aligned with the new registry via **`_install_app_provider_registry`** in **`api.admin_routes`** (see `apply_admin_config` / dry-run apply paths).
 - **Two rate limiters (intentionally separate):**
   - **Provider throughput + upstream concurrency:** **`GlobalRateLimiter`** in **`providers/rate_limit.py`** (shared by OpenAI-chat and native‑Anthropic HTTP transports).
   - **Outbound bot pacing + dedupe queue:** **`MessagingRateLimiter`** in **`messaging/limiter.py`** (Telegram / Discord sends).

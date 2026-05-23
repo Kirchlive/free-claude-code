@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from .observability_settings import StructuredTraceSink
+
 
 class ObservabilityMixin(BaseModel):
     log_raw_api_payloads: bool = Field(
@@ -29,4 +31,8 @@ class ObservabilityMixin(BaseModel):
     )
     debug_subagent_stack: bool = Field(
         default=False, validation_alias="DEBUG_SUBAGENT_STACK"
+    )
+    #: ``noop`` discards payloads from :func:`core.trace.trace_event` hook (default emits loguru).
+    structured_trace_sink: StructuredTraceSink = Field(
+        default="default", validation_alias="STRUCTURED_TRACE_SINK"
     )

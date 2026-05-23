@@ -63,7 +63,7 @@ def ollama_config():
 @pytest.fixture(autouse=True)
 def mock_rate_limiter():
     """Mock the global rate limiter to prevent waiting."""
-    with patch("providers.anthropic_messages.GlobalRateLimiter") as mock:
+    with patch("providers.anthropic_messages_transport.GlobalRateLimiter") as mock:
         instance = mock.get_scoped_instance.return_value
         instance.wait_if_blocked = AsyncMock(return_value=False)
 

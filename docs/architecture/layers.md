@@ -36,7 +36,7 @@ Two resolution contexts share the same provider identity map (`ProviderRegistry`
 
 Unknown provider IDs and resolution-time auth semantics should behave consistently; **`tests/contracts/test_provider_resolution_semantics.py`** complements import-only contracts.
 
-**HTTP errors:** ingress failures from [`api.dependencies`](../../api/dependencies.py) (subclasses of [`api.ingress_errors.IngressDetailError`](../../api/ingress_errors.py)) are rendered as FastAPI-compatible `{"detail": ...}` via [`api.ingress_handlers.register_ingress_exception_handlers`](../../api/ingress_handlers.py). [`ProviderError`](../../providers/exceptions.py) responses use Anthropic-shaped JSON from [`api.app.create_app`](../../api/app.py). Details: [api-package.md — HTTP error shapes](api-package.md#http-error-shapes).
+**HTTP errors:** ingress failures from [`api.dependencies`](../../api/dependencies.py) (subclasses of [`IngressDetailError`](../../api/ingress/errors.py); stable shim [`api.ingress_errors`](../../api/ingress_errors.py)) are rendered as FastAPI-compatible `{"detail": ...}` via [`api.ingress_handlers.register_ingress_exception_handlers`](../../api/ingress/handlers.py) (shim [`api.ingress_handlers`](../../api/ingress_handlers.py)). [`ProviderError`](../../providers/exceptions.py) responses use Anthropic-shaped JSON from [`api.app.create_app`](../../api/app.py). Details: [api-package.md — HTTP error shapes](api-package.md#http-error-shapes).
 
 For where to add HTTP-layer code versus pipelines, see **`docs/architecture/api-package.md`**.
 

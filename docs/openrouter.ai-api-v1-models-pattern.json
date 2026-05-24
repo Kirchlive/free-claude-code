@@ -1,0 +1,66 @@
+{"data":[{"id":"qwen/qwen3.7-max","canonical_slug":"qwen/qwen3.7-max-20260520","hugging_face_id":null,"name":"Qwen: Qwen3.7 Max","created":1779376861,"description":"Qwen3.7-Max is the flagship model in Alibaba's Qwen3.7 series. It supports text input and output and is designed for agent-centric workloads, with particular strengths in coding, office and productivity tasks,...","context_length":1000000,"architecture":{"modality":"text-\u003Etext","input_modalities":["text"],"output_modalities":["text"],"tokenizer":"Qwen","instruct_type":null},"pricing":{"prompt":"0.0000025","completion":"0.0000075","input_cache_write":"0.000003125"},"top_provider":{"context_length":1000000,"max_completion_tokens":65536,"is_moderated":false},"per_request_limits":null,"supported_parameters":["include_reasoning","logprobs","max_tokens","presence_penalty","reasoning","response_format","seed","structured_outputs","temperature","tool_choice","tools","top_logprobs","top_p"],"default_parameters":{"temperature":null,"top_p":null,"top_k":null,"frequency_penalty":null,"presence_penalty":null,"repetition_penalty":null},"supported_voices":null,"knowledge_cutoff":null,"expiration_date":null,"links":{"details":"/api/v1/models/qwen/qwen3.7-max-20260520/endpoints"}}]}
+
+{
+  "data": [
+    {
+      "id": "qwen/qwen3.7-max",
+      "canonical_slug": "qwen/qwen3.7-max-20260520",
+      "hugging_face_id": null,
+      "name": "Qwen: Qwen3.7 Max",
+      "created": 1779376861,
+      "description": "Qwen3.7-Max is the flagship model in Alibaba's Qwen3.7 series. It supports text input and output and is designed for agent-centric workloads, with particular strengths in coding, office and productivity tasks,...",
+      "context_length": 1000000,
+      "architecture": {
+        "modality": "text-\u003Etext",
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ],
+        "tokenizer": "Qwen",
+        "instruct_type": null
+      },
+      "pricing": {
+        "prompt": "0.0000025",
+        "completion": "0.0000075",
+        "input_cache_write": "0.000003125"
+      },
+      "top_provider": {
+        "context_length": 1000000,
+        "max_completion_tokens": 65536,
+        "is_moderated": false
+      },
+      "per_request_limits": null,
+      "supported_parameters": [
+        "include_reasoning",
+        "logprobs",
+        "max_tokens",
+        "presence_penalty",
+        "reasoning",
+        "response_format",
+        "seed",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_logprobs",
+        "top_p"
+      ],
+      "default_parameters": {
+        "temperature": null,
+        "top_p": null,
+        "top_k": null,
+        "frequency_penalty": null,
+        "presence_penalty": null,
+        "repetition_penalty": null
+      },
+      "supported_voices": null,
+      "knowledge_cutoff": null,
+      "expiration_date": null,
+      "links": {
+        "details": "/api/v1/models/qwen/qwen3.7-max-20260520/endpoints"
+      }
+    }
+  ]
+}

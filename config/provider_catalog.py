@@ -55,10 +55,6 @@ class ProviderDescriptor:
     # Path (``~`` allowed) to a credential file resolved at request time, e.g. an
     # OAuth token store. Mutually exclusive with credential_env/static_credential.
     credential_file: str | None = None
-    # Default context window (tokens) for this provider's models, used to set the
-    # launched Claude Code's CLAUDE_CODE_MAX_CONTEXT_TOKENS. Leave None for
-    # multi-model providers whose models vary (resolved via override instead).
-    context_window: int | None = None
     default_base_url: str | None = None
     base_url_attr: str | None = None
     proxy_attr: str | None = None
@@ -271,7 +267,6 @@ PROVIDER_CATALOG: dict[str, ProviderDescriptor] = {
         transport_type="responses_oauth",
         credential_file="~/.codex/auth.json",
         default_base_url=OPENAI_CODEX_DEFAULT_BASE,
-        context_window=1_000_000,
         capabilities=("chat", "streaming", "tools", "thinking"),
     ),
 }

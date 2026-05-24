@@ -220,21 +220,21 @@ class TestSettings:
         settings = Settings()
         assert settings.provider_rate_window == 30
 
-    def test_claude_code_auto_compact_window_from_env(self, monkeypatch):
-        """CLAUDE_CODE_AUTO_COMPACT_WINDOW env var is loaded into settings."""
+    def test_claude_code_max_context_tokens_from_env(self, monkeypatch):
+        """CLAUDE_CODE_MAX_CONTEXT_TOKENS env var is loaded into settings."""
         from config.settings import Settings
 
-        monkeypatch.setenv("CLAUDE_CODE_AUTO_COMPACT_WINDOW", "300000")
+        monkeypatch.setenv("CLAUDE_CODE_MAX_CONTEXT_TOKENS", "1000000")
         settings = Settings()
-        assert settings.claude_code_auto_compact_window == 300000
+        assert settings.claude_code_max_context_tokens == 1000000
 
-    def test_claude_code_auto_compact_window_defaults_to_190000(self, monkeypatch):
-        """CLAUDE_CODE_AUTO_COMPACT_WINDOW defaults to 190000 when unset."""
+    def test_claude_code_max_context_tokens_defaults_to_zero(self, monkeypatch):
+        """CLAUDE_CODE_MAX_CONTEXT_TOKENS defaults to 0 (auto) when unset."""
         from config.settings import Settings
 
-        monkeypatch.delenv("CLAUDE_CODE_AUTO_COMPACT_WINDOW", raising=False)
+        monkeypatch.delenv("CLAUDE_CODE_MAX_CONTEXT_TOKENS", raising=False)
         settings = Settings()
-        assert settings.claude_code_auto_compact_window == 190000
+        assert settings.claude_code_max_context_tokens == 0
 
     def test_http_read_timeout_from_env(self, monkeypatch):
         """HTTP_READ_TIMEOUT env var is loaded into settings."""

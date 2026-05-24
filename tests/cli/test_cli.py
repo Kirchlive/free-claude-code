@@ -523,6 +523,12 @@ class TestCLISession:
         with (
             patch.dict(os.environ, {"ANTHROPIC_API_KEY": "official-key"}, clear=False),
             patch(
+                "cli.session.get_settings",
+                return_value=MagicMock(
+                    claude_code_max_context_tokens=0, model="nvidia_nim/x"
+                ),
+            ),
+            patch(
                 "asyncio.create_subprocess_exec", new_callable=AsyncMock
             ) as mock_exec,
         ):
@@ -533,7 +539,7 @@ class TestCLISession:
             env = mock_exec.call_args.kwargs["env"]
             assert env["ANTHROPIC_AUTH_TOKEN"] == "proxy-token"
             assert env["CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"] == "1"
-            assert env["CLAUDE_CODE_AUTO_COMPACT_WINDOW"] == "190000"
+            assert "CLAUDE_CODE_AUTO_COMPACT_WINDOW" not in env
             assert "ANTHROPIC_API_KEY" not in env
 
     @pytest.mark.asyncio

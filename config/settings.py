@@ -217,11 +217,11 @@ class Settings(BaseSettings):
     provider_max_concurrency: int = Field(
         default=5, validation_alias="PROVIDER_MAX_CONCURRENCY"
     )
-    # Auto-compaction trigger passed to the launched Claude Code CLI. Raise for
-    # large-context gateway models (e.g. openai_codex/gpt-5.5) so Claude Code does
-    # not compact/abort prematurely; the backend accepts well beyond the default.
-    claude_code_auto_compact_window: int = Field(
-        default=190000, validation_alias="CLAUDE_CODE_AUTO_COMPACT_WINDOW"
+    # Override for the context window Claude Code assumes for the active gateway
+    # model. >0 sets CLAUDE_CODE_MAX_CONTEXT_TOKENS + DISABLE_COMPACT on the launched
+    # CLI. 0 = auto (per-provider catalog default, else Claude Code's native ~200k).
+    claude_code_max_context_tokens: int = Field(
+        default=0, validation_alias="CLAUDE_CODE_MAX_CONTEXT_TOKENS"
     )
     enable_model_thinking: bool = Field(
         default=True, validation_alias="ENABLE_MODEL_THINKING"

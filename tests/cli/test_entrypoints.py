@@ -306,7 +306,7 @@ def test_claude_child_env_targets_current_proxy_config() -> None:
     assert env["ANTHROPIC_BASE_URL"] == "http://127.0.0.1:9090"
     assert env["ANTHROPIC_AUTH_TOKEN"] == "proxy-token"
     assert env["CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"] == "1"
-    assert env["CLAUDE_CODE_AUTO_COMPACT_WINDOW"] == "190000"
+    assert "CLAUDE_CODE_AUTO_COMPACT_WINDOW" not in env
     assert "ANTHROPIC_API_KEY" not in env
 
 
@@ -325,27 +325,54 @@ def test_claude_child_env_removes_blank_configured_auth_token() -> None:
     assert "ANTHROPIC_API_KEY" not in env
 
 
-def test_claude_child_env_auto_compact_window_defaults_to_190000() -> None:
-    from cli.entrypoints import _claude_child_env
-
-    env = _claude_child_env(_launcher_settings(), {})
-
-    assert env["CLAUDE_CODE_AUTO_COMPACT_WINDOW"] == "190000"
-
-
-def test_claude_child_env_uses_configured_auto_compact_window() -> None:
+def test_claude_child_env_no_context_override_by_default() -> None:
     from cli.entrypoints import _claude_child_env
 
     settings = Settings.model_construct(
         host="0.0.0.0",
         port=8082,
         anthropic_auth_token="freecc",
-        claude_code_auto_compact_window=250000,
+        model="nvidia_nim/meta/llama",
+        claude_code_max_context_tokens=0,
     )
 
     env = _claude_child_env(settings, {})
 
-    assert env["CLAUDE_CODE_AUTO_COMPACT_WINDOW"] == "250000"
+    assert "CLAUDE_CODE_MAX_CONTEXT_TOKENS" not in env
+    assert "DISABLE_COMPACT" not in env
+
+
+def test_claude_child_env_uses_configured_max_context_tokens() -> None:
+    from cli.entrypoints import _claude_child_env
+
+    settings = Settings.model_construct(
+        host="0.0.0.0",
+        port=8082,
+        anthropic_auth_token="freecc",
+        claude_code_max_context_tokens=250000,
+    )
+
+    env = _claude_child_env(settings, {})
+
+    assert env["CLAUDE_CODE_MAX_CONTEXT_TOKENS"] == "250000"
+    assert env["DISABLE_COMPACT"] == "1"
+
+
+def test_claude_child_env_uses_catalog_window_for_openai_codex() -> None:
+    from cli.entrypoints import _claude_child_env
+
+    settings = Settings.model_construct(
+        host="0.0.0.0",
+        port=8082,
+        anthropic_auth_token="freecc",
+        model="openai_codex/gpt-5.5",
+        claude_code_max_context_tokens=0,
+    )
+
+    env = _claude_child_env(settings, {})
+
+    assert env["CLAUDE_CODE_MAX_CONTEXT_TOKENS"] == "1000000"
+    assert env["DISABLE_COMPACT"] == "1"
 
 
 def test_launch_claude_passes_args_and_child_env(
@@ -379,7 +406,7 @@ def test_launch_claude_passes_args_and_child_env(
     assert child_env["ANTHROPIC_BASE_URL"] == "http://127.0.0.1:9191"
     assert child_env["ANTHROPIC_AUTH_TOKEN"] == "proxy-token"
     assert child_env["CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"] == "1"
-    assert child_env["CLAUDE_CODE_AUTO_COMPACT_WINDOW"] == "190000"
+    assert "CLAUDE_CODE_AUTO_COMPACT_WINDOW" not in child_env
     assert child_env["KEEP_ME"] == "yes"
     register_pid.assert_called_once_with(12345)
     unregister_pid.assert_called_once_with(12345)

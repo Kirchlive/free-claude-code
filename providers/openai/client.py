@@ -194,6 +194,19 @@ class OpenAICodexProvider(BaseProvider):
         if event is not None:
             yield event
 
+    def _error_message(self, error: Exception, request_id: str | None) -> str:
+        """Map a transport/auth error to a user-facing message."""
+        if isinstance(error, AuthenticationError):
+            base_message = error.message
+        else:
+            mapped = map_error(error, rate_limiter=self._global_rate_limiter)
+            base_message = user_visible_message_for_mapped_provider_error(
+                mapped,
+                provider_name=self._provider_name,
+                read_timeout_s=self._config.http_read_timeout,
+            )
+        return append_request_id(base_message, request_id)
+
     async def stream_response(
         self,
         request: Any,
@@ -227,33 +240,61 @@ class OpenAICodexProvider(BaseProvider):
 
         yield sse.message_start()
 
-        response: httpx.Response | None = None
+        # The ChatGPT-Codex backend occasionally drops the connection mid-stream
+        # (RemoteProtocolError) during long reasoning before any content arrives.
+        # Retry once when nothing has been emitted yet; re-running is safe because
+        # message_start carries no content and the converter state is still pristine.
+        produced_any = False
+        max_attempts = 2
         async with self._global_rate_limiter.concurrency_slot():
-            try:
-                response = await self._open_stream(body)
-                async for event in self._iter_events(response):
-                    for out in converter.feed(event):
+            for attempt in range(max_attempts):
+                response: httpx.Response | None = None
+                try:
+                    response = await self._open_stream(body)
+                    async for event in self._iter_events(response):
+                        for out in converter.feed(event):
+                            produced_any = True
+                            yield out
+                    for out in converter.finish():
                         yield out
-                for out in converter.finish():
-                    yield out
-            except asyncio.CancelledError, GeneratorExit:
-                raise
-            except Exception as error:
-                self._log_stream_transport_error(
-                    self._provider_name, req_tag, error, request_id=request_id
-                )
-                if isinstance(error, AuthenticationError):
-                    base_message = error.message
-                else:
-                    mapped = map_error(error, rate_limiter=self._global_rate_limiter)
-                    base_message = user_visible_message_for_mapped_provider_error(
-                        mapped,
-                        provider_name=self._provider_name,
-                        read_timeout_s=self._config.http_read_timeout,
+                    return
+                except asyncio.CancelledError, GeneratorExit:
+                    raise
+                except (httpx.RemoteProtocolError, httpx.ReadError) as error:
+                    self._log_stream_transport_error(
+                        self._provider_name, req_tag, error, request_id=request_id
                     )
-                error_message = append_request_id(base_message, request_id)
-                for out in converter.emit_error_tail(error_message):
-                    yield out
-            finally:
-                if response is not None and not response.is_closed:
-                    await response.aclose()
+                    can_retry = (
+                        attempt + 1 < max_attempts
+                        and not produced_any
+                        and not converter.has_emitted_content()
+                    )
+                    if can_retry:
+                        if response is not None and not response.is_closed:
+                            await response.aclose()
+                        trace_event(
+                            stage="provider",
+                            event="provider.stream.retry",
+                            source="provider",
+                            provider=self._provider_name,
+                            attempt=attempt + 1,
+                            exc_type=type(error).__name__,
+                        )
+                        continue
+                    for out in converter.emit_error_tail(
+                        self._error_message(error, request_id)
+                    ):
+                        yield out
+                    return
+                except Exception as error:
+                    self._log_stream_transport_error(
+                        self._provider_name, req_tag, error, request_id=request_id
+                    )
+                    for out in converter.emit_error_tail(
+                        self._error_message(error, request_id)
+                    ):
+                        yield out
+                    return
+                finally:
+                    if response is not None and not response.is_closed:
+                        await response.aclose()

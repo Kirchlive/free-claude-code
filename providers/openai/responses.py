@@ -325,6 +325,15 @@ class ResponsesStreamConverter:
     def finished(self) -> bool:
         return self._finished
 
+    def has_emitted_content(self) -> bool:
+        """True once any text/thinking/tool content block has been started."""
+        blocks = self._sse.blocks
+        return (
+            blocks.text_index != -1
+            or blocks.thinking_index != -1
+            or any(state.started for state in blocks.tool_states.values())
+        )
+
     def emit_error_tail(self, message: str) -> Iterator[str]:
         """Emit an error text block + message tail for a transport-level failure."""
         if self._finished:

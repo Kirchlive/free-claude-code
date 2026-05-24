@@ -71,6 +71,8 @@ function providerName(providerId) {
     opencode: "OpenCode Zen",
     opencode_go: "OpenCode Go",
     zai: "Z.ai",
+    venice: "Venice",
+    openai_codex: "OpenAI (Codex)",
   };
   if (names[providerId]) return names[providerId];
   return providerId
@@ -80,8 +82,10 @@ function providerName(providerId) {
 }
 
 function statusClass(status) {
-  if (["configured", "reachable", "running"].includes(status)) return "ok";
-  if (["missing_key", "missing_url", "unknown"].includes(status)) return "warn";
+  if (["configured", "reachable", "running", "authenticated"].includes(status))
+    return "ok";
+  if (["missing_key", "missing_url", "unknown", "not_authenticated"].includes(status))
+    return "warn";
   if (["offline", "error"].includes(status)) return "error";
   return "neutral";
 }
@@ -166,6 +170,7 @@ function renderProviders(providerStatus) {
     const card = document.createElement("article");
     card.className = "provider-card";
     card.dataset.provider = provider.provider_id;
+    card.dataset.kind = provider.kind;
 
     const title = document.createElement("div");
     title.className = "provider-title";
@@ -178,15 +183,24 @@ function renderProviders(providerStatus) {
 
     const meta = document.createElement("div");
     meta.className = "provider-meta";
-    meta.textContent =
-      provider.kind === "local"
-        ? provider.base_url || "No local URL configured"
-        : provider.credential_env;
+    if (provider.kind === "local") {
+      meta.textContent = provider.base_url || "No local URL configured";
+    } else if (provider.kind === "oauth") {
+      meta.textContent = provider.credential_file || "ChatGPT OAuth (codex login)";
+    } else {
+      meta.textContent = provider.credential_env;
+    }
 
     const button = document.createElement("button");
     button.type = "button";
     button.className = "test-button";
-    button.textContent = provider.kind === "local" ? "Test" : "Refresh models";
+    if (provider.kind === "local") {
+      button.textContent = "Test";
+    } else if (provider.kind === "oauth") {
+      button.textContent = "Test Login";
+    } else {
+      button.textContent = "Refresh models";
+    }
     button.addEventListener("click", () => testProvider(provider.provider_id, button));
 
     card.append(title, meta, button);
@@ -442,8 +456,10 @@ async function refreshLocalStatus() {
 
 async function testProvider(providerId, button) {
   const original = button.textContent;
+  const card = document.querySelector(`[data-provider="${providerId}"]`);
+  const isOauth = card?.dataset.kind === "oauth";
   button.disabled = true;
-  button.textContent = "Testing";
+  button.textContent = isOauth ? "Testing login" : "Testing";
   try {
     const result = await api(`/admin/api/providers/${providerId}/test`, {
       method: "POST",
@@ -452,9 +468,11 @@ async function testProvider(providerId, button) {
     if (result.ok) {
       updateProviderCard(
         providerId,
-        "reachable",
-        `${result.models.length} models`,
-        result.models.slice(0, 3).join(", ") || "No models returned",
+        isOauth ? "authenticated" : "reachable",
+        isOauth ? "Logged in" : `${result.models.length} models`,
+        isOauth
+          ? `${result.models.length} models available`
+          : result.models.slice(0, 3).join(", ") || "No models returned",
       );
       state.modelOptions = Array.from(
         new Set([
@@ -464,7 +482,12 @@ async function testProvider(providerId, button) {
       ).sort();
       syncModelDatalist();
     } else {
-      updateProviderCard(providerId, "offline", result.error_type, result.error_type);
+      updateProviderCard(
+        providerId,
+        isOauth ? "not_authenticated" : "offline",
+        isOauth ? "Login failed" : result.error_type,
+        result.error_type,
+      );
     }
   } finally {
     button.disabled = false;

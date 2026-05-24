@@ -252,6 +252,18 @@ FIELDS: tuple[ConfigFieldSpec, ...] = (
         ),
     ),
     ConfigFieldSpec(
+        "VENICE_API_KEY",
+        "Venice API Key",
+        "providers",
+        "secret",
+        settings_attr="venice_api_key",
+        secret=True,
+        description=(
+            "Venice AI (api.venice.ai); OpenAI-compatible. "
+            "Key from venice.ai/settings/api."
+        ),
+    ),
+    ConfigFieldSpec(
         "LM_STUDIO_BASE_URL",
         "LM Studio Base URL",
         "providers",
@@ -404,6 +416,15 @@ FIELDS: tuple[ConfigFieldSpec, ...] = (
         "providers",
         "secret",
         settings_attr="cerebras_proxy",
+        secret=True,
+        advanced=True,
+    ),
+    ConfigFieldSpec(
+        "VENICE_PROXY",
+        "Venice Proxy",
+        "providers",
+        "secret",
+        settings_attr="venice_proxy",
         secret=True,
         advanced=True,
     ),
@@ -1253,6 +1274,18 @@ def provider_config_status(
     state = state or _load_value_state()
     statuses: list[dict[str, Any]] = []
     for provider_id, descriptor in PROVIDER_CATALOG.items():
+        if descriptor.credential_file is not None:
+            authed = Path(descriptor.credential_file).expanduser().is_file()
+            statuses.append(
+                {
+                    "provider_id": provider_id,
+                    "kind": "oauth",
+                    "status": "authenticated" if authed else "not_authenticated",
+                    "label": "Logged in" if authed else "Not logged in",
+                    "credential_file": descriptor.credential_file,
+                }
+            )
+            continue
         if descriptor.credential_env is None:
             base_url = ""
             if descriptor.base_url_attr is not None:

@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-TransportType = Literal["openai_chat", "anthropic_messages"]
+TransportType = Literal["openai_chat", "anthropic_messages", "responses_oauth"]
 
 # Default upstream base URLs (also re-exported via :mod:`providers.defaults`)
 NVIDIA_NIM_DEFAULT_BASE = "https://integrate.api.nvidia.com/v1"
@@ -36,6 +36,9 @@ ZAI_DEFAULT_BASE = "https://api.z.ai/api/anthropic/v1"
 GEMINI_DEFAULT_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/"
 GROQ_DEFAULT_BASE = "https://api.groq.com/openai/v1"
 CEREBRAS_DEFAULT_BASE = "https://api.cerebras.ai/v1"
+VENICE_DEFAULT_BASE = "https://api.venice.ai/api/v1"
+# OpenAI via Codex ChatGPT-OAuth backend (Responses API; not api.openai.com).
+OPENAI_CODEX_DEFAULT_BASE = "https://chatgpt.com/backend-api/codex"
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,6 +52,9 @@ class ProviderDescriptor:
     credential_url: str | None = None
     credential_attr: str | None = None
     static_credential: str | None = None
+    # Path (``~`` allowed) to a credential file resolved at request time, e.g. an
+    # OAuth token store. Mutually exclusive with credential_env/static_credential.
+    credential_file: str | None = None
     default_base_url: str | None = None
     base_url_attr: str | None = None
     proxy_attr: str | None = None
@@ -245,6 +251,23 @@ PROVIDER_CATALOG: dict[str, ProviderDescriptor] = {
             "native_anthropic",
             "local",
         ),
+    ),
+    "venice": ProviderDescriptor(
+        provider_id="venice",
+        transport_type="openai_chat",
+        credential_env="VENICE_API_KEY",
+        credential_url="https://venice.ai/settings/api",
+        credential_attr="venice_api_key",
+        default_base_url=VENICE_DEFAULT_BASE,
+        proxy_attr="venice_proxy",
+        capabilities=("chat", "streaming", "tools", "thinking", "rate_limit"),
+    ),
+    "openai_codex": ProviderDescriptor(
+        provider_id="openai_codex",
+        transport_type="responses_oauth",
+        credential_file="~/.codex/auth.json",
+        default_base_url=OPENAI_CODEX_DEFAULT_BASE,
+        capabilities=("chat", "streaming", "tools", "thinking"),
     ),
 }
 

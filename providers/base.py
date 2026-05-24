@@ -18,6 +18,9 @@ class ProviderConfig(BaseModel):
     """
 
     api_key: str
+    # Path to a runtime-resolved credential file (e.g. OAuth token store). When set,
+    # the provider loads its credential at request time instead of from ``api_key``.
+    credential_file: str | None = None
     base_url: str | None = None
     rate_limit: int | None = None
     rate_window: int = 60

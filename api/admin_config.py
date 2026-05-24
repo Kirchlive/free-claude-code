@@ -524,17 +524,18 @@ FIELDS: tuple[ConfigFieldSpec, ...] = (
         default="5",
     ),
     ConfigFieldSpec(
-        "CLAUDE_CODE_AUTO_COMPACT_WINDOW",
-        "Auto-Compact Window",
+        "CLAUDE_CODE_MAX_CONTEXT_TOKENS",
+        "Max Context Tokens",
         "runtime",
         "number",
-        settings_attr="claude_code_auto_compact_window",
-        default="190000",
+        settings_attr="claude_code_max_context_tokens",
+        default="0",
         advanced=True,
         restart_required=True,
         description=(
-            "Token window before the launched Claude Code CLI auto-compacts. "
-            "Raise for large-context gateway models (e.g. openai_codex/gpt-5.5)."
+            "Override the context window Claude Code assumes for the active model "
+            "(0 = auto / per-provider default). >0 also sets DISABLE_COMPACT; use for "
+            "large-context gateway models, e.g. 1000000 for openai_codex/gpt-5.5."
         ),
     ),
     ConfigFieldSpec(

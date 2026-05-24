@@ -24,6 +24,7 @@ from cli.process_registry import (
     register_pid,
     unregister_pid,
 )
+from config.context_window import apply_context_window_env, resolve_max_context_tokens
 from config.paths import config_dir_path, legacy_env_paths, managed_env_path
 from config.settings import Settings, get_settings
 
@@ -182,9 +183,7 @@ def _claude_child_env(
     env.pop("ANTHROPIC_API_KEY", None)
     env["ANTHROPIC_BASE_URL"] = local_proxy_root_url(settings)
     env["CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY"] = "1"
-    env["CLAUDE_CODE_AUTO_COMPACT_WINDOW"] = str(
-        settings.claude_code_auto_compact_window
-    )
+    apply_context_window_env(env, resolve_max_context_tokens(settings))
     if token := settings.anthropic_auth_token.strip():
         env["ANTHROPIC_AUTH_TOKEN"] = token
     return env

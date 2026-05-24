@@ -524,6 +524,20 @@ FIELDS: tuple[ConfigFieldSpec, ...] = (
         default="5",
     ),
     ConfigFieldSpec(
+        "CLAUDE_CODE_AUTO_COMPACT_WINDOW",
+        "Auto-Compact Window",
+        "runtime",
+        "number",
+        settings_attr="claude_code_auto_compact_window",
+        default="190000",
+        advanced=True,
+        restart_required=True,
+        description=(
+            "Token window before the launched Claude Code CLI auto-compacts. "
+            "Raise for large-context gateway models (e.g. openai_codex/gpt-5.5)."
+        ),
+    ),
+    ConfigFieldSpec(
         "HTTP_READ_TIMEOUT",
         "HTTP Read Timeout",
         "runtime",

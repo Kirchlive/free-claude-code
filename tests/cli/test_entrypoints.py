@@ -325,6 +325,29 @@ def test_claude_child_env_removes_blank_configured_auth_token() -> None:
     assert "ANTHROPIC_API_KEY" not in env
 
 
+def test_claude_child_env_auto_compact_window_defaults_to_190000() -> None:
+    from cli.entrypoints import _claude_child_env
+
+    env = _claude_child_env(_launcher_settings(), {})
+
+    assert env["CLAUDE_CODE_AUTO_COMPACT_WINDOW"] == "190000"
+
+
+def test_claude_child_env_uses_configured_auto_compact_window() -> None:
+    from cli.entrypoints import _claude_child_env
+
+    settings = Settings.model_construct(
+        host="0.0.0.0",
+        port=8082,
+        anthropic_auth_token="freecc",
+        claude_code_auto_compact_window=250000,
+    )
+
+    env = _claude_child_env(settings, {})
+
+    assert env["CLAUDE_CODE_AUTO_COMPACT_WINDOW"] == "250000"
+
+
 def test_launch_claude_passes_args_and_child_env(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

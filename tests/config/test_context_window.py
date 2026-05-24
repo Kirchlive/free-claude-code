@@ -1,5 +1,7 @@
 """Tests for the per-model context-window resolver."""
 
+from unittest.mock import patch
+
 from config.context_window import apply_context_window_env, resolve_max_context_tokens
 from config.settings import Settings
 
@@ -8,22 +10,33 @@ def _settings(**kwargs) -> Settings:
     return Settings.model_construct(**kwargs)
 
 
-def test_override_wins_over_catalog() -> None:
+def test_override_wins_over_db() -> None:
     settings = _settings(
         claude_code_max_context_tokens=500000, model="openai_codex/gpt-5.5"
     )
-    assert resolve_max_context_tokens(settings) == 500000
+    with patch("config.context_window.lookup_context_window", return_value=1_050_000):
+        assert resolve_max_context_tokens(settings) == 500000
 
 
-def test_catalog_default_for_openai_codex() -> None:
+def test_db_window_for_active_model() -> None:
     settings = _settings(claude_code_max_context_tokens=0, model="openai_codex/gpt-5.5")
-    assert resolve_max_context_tokens(settings) == 1_000_000
+    with patch(
+        "config.context_window.lookup_context_window", return_value=1_050_000
+    ) as mock_lookup:
+        assert resolve_max_context_tokens(settings) == 1_050_000
+    mock_lookup.assert_called_once_with("gpt-5.5")
 
 
-def test_zero_when_provider_has_no_catalog_window() -> None:
+def test_zero_when_db_has_no_match() -> None:
     settings = _settings(
-        claude_code_max_context_tokens=0, model="nvidia_nim/meta/llama"
+        claude_code_max_context_tokens=0, model="lmstudio/some-local-model"
     )
+    with patch("config.context_window.lookup_context_window", return_value=None):
+        assert resolve_max_context_tokens(settings) == 0
+
+
+def test_zero_when_model_has_no_provider_prefix() -> None:
+    settings = _settings(claude_code_max_context_tokens=0, model="")
     assert resolve_max_context_tokens(settings) == 0
 
 

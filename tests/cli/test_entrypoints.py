@@ -336,7 +336,8 @@ def test_claude_child_env_no_context_override_by_default() -> None:
         claude_code_max_context_tokens=0,
     )
 
-    env = _claude_child_env(settings, {})
+    with patch("config.context_window.lookup_context_window", return_value=None):
+        env = _claude_child_env(settings, {})
 
     assert "CLAUDE_CODE_MAX_CONTEXT_TOKENS" not in env
     assert "DISABLE_COMPACT" not in env
@@ -358,7 +359,7 @@ def test_claude_child_env_uses_configured_max_context_tokens() -> None:
     assert env["DISABLE_COMPACT"] == "1"
 
 
-def test_claude_child_env_uses_catalog_window_for_openai_codex() -> None:
+def test_claude_child_env_uses_db_window_for_active_model() -> None:
     from cli.entrypoints import _claude_child_env
 
     settings = Settings.model_construct(
@@ -369,7 +370,8 @@ def test_claude_child_env_uses_catalog_window_for_openai_codex() -> None:
         claude_code_max_context_tokens=0,
     )
 
-    env = _claude_child_env(settings, {})
+    with patch("config.context_window.lookup_context_window", return_value=1_000_000):
+        env = _claude_child_env(settings, {})
 
     assert env["CLAUDE_CODE_MAX_CONTEXT_TOKENS"] == "1000000"
     assert env["DISABLE_COMPACT"] == "1"

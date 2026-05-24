@@ -3,20 +3,20 @@
 Claude Code assumes a fixed (~200k) context window for gateway model ids and cannot
 be told the real window via ``/v1/models``. The supported lever is the
 ``CLAUDE_CODE_MAX_CONTEXT_TOKENS`` env var, which only takes effect together with
-``DISABLE_COMPACT``. This module resolves a window for the active default model and
-applies those env vars to a child environment.
+``DISABLE_COMPACT``.
 
-Resolution order: explicit override (``claude_code_max_context_tokens``) > per-provider
-catalog default (``ProviderDescriptor.context_window``) > 0 (leave Claude Code's native
-behavior). The value follows the default ``MODEL`` at launch; a mid-session ``/model``
-switch does not update it.
+The window is resolved per active model: explicit override
+(``claude_code_max_context_tokens``) > the model's window from the OpenRouter context
+DB (:mod:`config.model_context_db`) > 0 (leave Claude Code's native behavior). The
+value follows the default ``MODEL`` at launch; a mid-session ``/model`` switch does not
+update it.
 """
 
 from __future__ import annotations
 
 from collections.abc import MutableMapping
 
-from config.provider_catalog import PROVIDER_CATALOG
+from config.model_context_db import lookup_context_window
 from config.settings import Settings
 
 
@@ -25,10 +25,11 @@ def resolve_max_context_tokens(settings: Settings) -> int:
     if settings.claude_code_max_context_tokens > 0:
         return settings.claude_code_max_context_tokens
     model = settings.model or ""
-    provider_id = model.split("/", 1)[0] if "/" in model else ""
-    descriptor = PROVIDER_CATALOG.get(provider_id)
-    if descriptor is not None and descriptor.context_window:
-        return descriptor.context_window
+    if "/" in model:
+        _provider_id, model_ref = model.split("/", 1)
+        window = lookup_context_window(model_ref)
+        if window:
+            return window
     return 0
 
 

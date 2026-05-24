@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import inspect
 import ipaddress
 from pathlib import Path
@@ -13,6 +14,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
+from config import model_context_db
 from config.settings import Settings
 from config.settings import get_settings as get_cached_settings
 from providers.registry import ProviderRegistry
@@ -187,6 +189,7 @@ async def test_provider(provider_id: str, request: Request):
             "error_type": type(exc).__name__,
         }
     registry.cache_model_infos(provider_id, infos)
+    await asyncio.to_thread(model_context_db.refresh)
     return {
         "provider_id": provider_id,
         "ok": True,
@@ -203,6 +206,8 @@ async def refresh_models(request: Request):
         registry = ProviderRegistry()
         request.app.state.provider_registry = registry
     await registry.refresh_model_list_cache(settings)
+    # Re-fetch the OpenRouter context-window data so per-model windows stay current.
+    await asyncio.to_thread(model_context_db.refresh)
     return {
         "cached_models": {
             provider_id: sorted(model_ids)

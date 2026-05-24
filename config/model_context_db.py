@@ -1,35 +1,27 @@
-"""OpenRouter-backed per-model context-window database.
+"""Per-model context windows from OpenRouter's public ``/v1/models``.
 
-OpenRouter's public ``/v1/models`` lists ``context_length`` for ~all mainstream
-models. We use it as a per-model context-window source for gateway models, since
-Claude Code assumes a fixed ~200k window for gateway model ids. The fcc-server side
-populates/refreshes the local cache (daily TTL) when provider models are refreshed;
-lookups are cache-only so the launch path stays fast and offline-safe.
+OpenRouter is treated as always-available: a single GET returns ``context_length`` for
+~all mainstream models, and we read the needed model's entry directly. The result is
+memoised per process (model windows are stable); ``refresh()`` drops the memo so newly
+integrated providers/models are picked up. Triggered when fcc-server (re)discovers
+provider models; the launch path resolves the active model's window directly.
 
-Matching is conservative: we normalise both ids (lowercase, ``.``/``_`` -> ``-``,
-last path segment only) and require an exact normalised match, so divergent versions
-(e.g. ``glm4.7`` vs ``glm-5.1``) do not mis-map. No match -> ``None`` (caller falls back).
+Matching is conservative: ids are normalised (lowercase, ``.``/``_`` -> ``-``, last
+path segment only) and matched exactly, so divergent versions (e.g. ``glm4.7`` vs
+``glm-5.1``) do not mis-map.
 """
 
 from __future__ import annotations
 
 import json
-import time
 import urllib.request
-from pathlib import Path
+from functools import lru_cache
 from typing import Any
 
 from loguru import logger
 
-from config.paths import config_dir_path
-
 OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
-_CACHE_TTL_SECONDS = 24 * 3600
-_FETCH_TIMEOUT_SECONDS = 5.0
-
-
-def _cache_path() -> Path:
-    return config_dir_path() / "cache" / "openrouter_models.json"
+_FETCH_TIMEOUT_SECONDS = 8.0
 
 
 def _normalise(model_id: str) -> str:
@@ -59,68 +51,33 @@ def _windows_from_payload(payload: Any) -> dict[str, int]:
     return windows
 
 
-def refresh(*, force: bool = False) -> dict[str, int]:
-    """Fetch the OpenRouter models DB and write the cache. Returns the windows map.
-
-    On network failure, returns any existing cached map (or empty) without raising.
-    """
-    path = _cache_path()
-    if not force:
-        cached = _load_cached(allow_stale=False)
-        if cached is not None:
-            return cached
+@lru_cache(maxsize=1)
+def _all_windows() -> dict[str, int]:
+    """Fetch the OpenRouter models list directly and return the window map (memoised)."""
+    request = urllib.request.Request(
+        OPENROUTER_MODELS_URL, headers={"Accept": "application/json"}
+    )
     try:
-        request = urllib.request.Request(
-            OPENROUTER_MODELS_URL, headers={"Accept": "application/json"}
-        )
         with urllib.request.urlopen(request, timeout=_FETCH_TIMEOUT_SECONDS) as resp:
             payload = json.loads(resp.read().decode("utf-8"))
     except (OSError, ValueError) as exc:
-        logger.warning("OpenRouter models DB fetch failed: {}", type(exc).__name__)
-        stale = _load_cached(allow_stale=True)
-        return stale if stale is not None else {}
-    windows = _windows_from_payload(payload)
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_suffix(".json.tmp")
-        tmp.write_text(
-            json.dumps({"fetched_at": time.time(), "windows": windows}),
-            encoding="utf-8",
-        )
-        tmp.replace(path)
-    except OSError as exc:
-        logger.debug("OpenRouter models DB cache write failed: {}", type(exc).__name__)
-    return windows
-
-
-def _load_cached(*, allow_stale: bool) -> dict[str, int] | None:
-    path = _cache_path()
-    if not path.is_file():
-        return None
-    try:
-        blob = json.loads(path.read_text(encoding="utf-8"))
-        windows = blob.get("windows")
-        fetched_at = blob.get("fetched_at", 0)
-    except OSError, ValueError:
-        return None
-    if not isinstance(windows, dict):
-        return None
-    if not allow_stale and (time.time() - float(fetched_at)) > _CACHE_TTL_SECONDS:
-        return None
-    return {str(k): int(v) for k, v in windows.items() if isinstance(v, int)}
+        # Minimal guard so a local network error never blocks launching the CLI.
+        logger.warning("OpenRouter models fetch failed: {}", type(exc).__name__)
+        return {}
+    return _windows_from_payload(payload)
 
 
 def lookup_context_window(model_ref: str) -> int | None:
-    """Return the context window for a model id from the cached OpenRouter DB.
+    """Fetch the OpenRouter entry for ``model_ref`` and return its context window.
 
-    Cache-only (no network). Returns None when the cache is missing or the model
-    cannot be confidently matched (caller should fall back).
+    Returns None when the model cannot be confidently matched (caller falls back).
     """
     if not model_ref:
         return None
-    # Cache-only read (no network) so the launch path stays fast and offline-safe;
-    # the cache is populated/refreshed by the fcc-server side via refresh().
-    windows = _load_cached(allow_stale=True)
-    if windows is None:
-        return None
-    return windows.get(_normalise(model_ref))
+    return _all_windows().get(_normalise(model_ref)) or None
+
+
+def refresh() -> None:
+    """Drop the memo and re-fetch (call when fcc-server (re)discovers provider models)."""
+    _all_windows.cache_clear()
+    _all_windows()

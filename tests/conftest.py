@@ -3,7 +3,7 @@ import contextlib
 import logging
 import os
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -26,6 +26,14 @@ def _isolate_from_dotenv(monkeypatch):
     monkeypatch.setattr(
         Settings, "model_config", {**Settings.model_config, "env_file": None}
     )
+
+
+@pytest.fixture(autouse=True)
+def _no_openrouter_fetch():
+    """Default the per-model context-window lookup to None so the resolver never hits
+    OpenRouter during tests. Tests that need a specific window patch this target."""
+    with patch("config.context_window.lookup_context_window", return_value=None):
+        yield
 
 
 @pytest.fixture

@@ -206,8 +206,8 @@ async def refresh_models(request: Request):
         registry = ProviderRegistry()
         request.app.state.provider_registry = registry
     await registry.refresh_model_list_cache(settings)
-    # Refresh the OpenRouter context-window DB so per-model windows stay current.
-    await asyncio.to_thread(model_context_db.refresh, force=True)
+    # Re-fetch the OpenRouter context-window data so per-model windows stay current.
+    await asyncio.to_thread(model_context_db.refresh)
     return {
         "cached_models": {
             provider_id: sorted(model_ids)

@@ -77,6 +77,35 @@ def lookup_context_window(model_ref: str) -> int | None:
     return _all_windows().get(_normalise(model_ref)) or None
 
 
+# Curated, deployment-authoritative windows that differ from OpenRouter's general spec,
+# keyed by the full fcc ``provider/model`` ref (lowercased). The ChatGPT-Codex backend
+# caps gpt-5.x at 272k regardless of the model's general 1M spec, so OpenRouter would
+# overstate it. Verified via the codex /models endpoint (context_window field).
+CURATED_CONTEXT_WINDOWS: dict[str, int] = {
+    "openai_codex/gpt-5.5": 272_000,
+    "openai_codex/gpt-5.4": 272_000,
+    "openai_codex/gpt-5.4-mini": 272_000,
+    "openai_codex/gpt-5.3-codex": 272_000,
+    "openai_codex/gpt-5.2": 272_000,
+    "openai_codex/codex-auto-review": 272_000,
+}
+
+
+def context_window_for(model_ref: str) -> int | None:
+    """Resolve a model's context window: curated table first, then OpenRouter.
+
+    ``model_ref`` is the full fcc ``provider/model`` ref. The curated table is
+    authoritative for known/constrained deployments; OpenRouter is a best-effort
+    fallback for everything else. Returns None when unknown (caller falls back).
+    """
+    if not model_ref:
+        return None
+    curated = CURATED_CONTEXT_WINDOWS.get(model_ref.strip().lower())
+    if curated:
+        return curated
+    return lookup_context_window(model_ref)
+
+
 def refresh() -> None:
     """Drop the memo and re-fetch (call when fcc-server (re)discovers provider models)."""
     _all_windows.cache_clear()

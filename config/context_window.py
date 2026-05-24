@@ -16,21 +16,18 @@ from __future__ import annotations
 
 from collections.abc import MutableMapping
 
-from config.model_context_db import lookup_context_window
+from config.model_context_db import context_window_for
 from config.settings import Settings
 
 
 def resolve_max_context_tokens(settings: Settings) -> int:
-    """Return the context window (tokens) to force, or 0 to keep Claude Code's default."""
+    """Return the context window (tokens) to force, or 0 to keep Claude Code's default.
+
+    Order: explicit override > curated/OpenRouter window for the active model > 0.
+    """
     if settings.claude_code_max_context_tokens > 0:
         return settings.claude_code_max_context_tokens
-    model = settings.model or ""
-    if "/" in model:
-        _provider_id, model_ref = model.split("/", 1)
-        window = lookup_context_window(model_ref)
-        if window:
-            return window
-    return 0
+    return context_window_for(settings.model or "") or 0
 
 
 def apply_context_window_env(env: MutableMapping[str, str], value: int) -> None:

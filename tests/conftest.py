@@ -32,7 +32,7 @@ def _isolate_from_dotenv(monkeypatch):
 def _no_openrouter_fetch():
     """Default the per-model context-window lookup to None so the resolver never hits
     OpenRouter during tests. Tests that need a specific window patch this target."""
-    with patch("config.context_window.lookup_context_window", return_value=None):
+    with patch("config.context_window.context_window_for", return_value=None):
         yield
 
 

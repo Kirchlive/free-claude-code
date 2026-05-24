@@ -4,6 +4,7 @@ import json
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
 
 from core.anthropic.stream_contracts import (
@@ -407,5 +408,48 @@ async def test_stream_error_path(provider):
     text = "".join(events)
     assert "message_start" in text
     assert "message_stop" in text
-    parsed = parse_sse_text(text)
-    assert_anthropic_stream_contract(parsed, allow_error=True)
+
+
+@pytest.mark.asyncio
+async def test_stream_retries_once_on_transient_drop(provider):
+    """A mid-stream RemoteProtocolError before any content retries once, then succeeds."""
+    fake_resp = MagicMock()
+    fake_resp.is_closed = True
+
+    async def gen_fail(_resp):
+        raise httpx.RemoteProtocolError(
+            "peer closed connection (incomplete chunked read)"
+        )
+        yield  # pragma: no cover - marks this an async generator
+
+    async def gen_ok(_resp):
+        yield {
+            "type": "response.output_text.delta",
+            "delta": "hi",
+            "content_index": 0,
+            "item_id": "m1",
+        }
+        yield {
+            "type": "response.completed",
+            "response": {"usage": {"output_tokens": 1}},
+        }
+
+    calls = {"n": 0}
+
+    def iter_stub(resp):
+        calls["n"] += 1
+        return gen_fail(resp) if calls["n"] == 1 else gen_ok(resp)
+
+    with (
+        patch.object(provider, "_open_stream", new=AsyncMock(return_value=fake_resp)),
+        patch.object(provider, "_iter_events", new=iter_stub),
+    ):
+        events = [
+            e async for e in provider.stream_response(MockRequest(), request_id="r")
+        ]
+
+    parsed = parse_sse_text("".join(events))
+    assert_anthropic_stream_contract(parsed)
+    assert "hi" in text_content(parsed)
+    assert calls["n"] == 2  # retried exactly once
+    assert "incomplete chunked read" not in "".join(events)

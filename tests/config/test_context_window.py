@@ -10,33 +10,40 @@ def _settings(**kwargs) -> Settings:
     return Settings.model_construct(**kwargs)
 
 
-def test_override_wins() -> None:
+def test_override_wins_over_db() -> None:
     settings = _settings(
         claude_code_max_context_tokens=500000, model="openai_codex/gpt-5.5"
     )
-    with patch("config.context_window.context_window_for", return_value=272_000):
+    with patch("config.context_window.lookup_context_window", return_value=1_050_000):
         assert resolve_max_context_tokens(settings) == 500000
 
 
-def test_resolved_window_for_active_model() -> None:
+def test_db_window_for_active_model() -> None:
     settings = _settings(claude_code_max_context_tokens=0, model="openai_codex/gpt-5.5")
     with patch(
-        "config.context_window.context_window_for", return_value=272_000
-    ) as mock_resolve:
-        assert resolve_max_context_tokens(settings) == 272_000
-    mock_resolve.assert_called_once_with("openai_codex/gpt-5.5")
+        "config.context_window.lookup_context_window", return_value=1_050_000
+    ) as mock_lookup:
+        assert resolve_max_context_tokens(settings) == 1_050_000
+    mock_lookup.assert_called_once_with("gpt-5.5")
 
 
-def test_zero_when_no_window_known() -> None:
-    settings = _settings(claude_code_max_context_tokens=0, model="lmstudio/local-model")
-    with patch("config.context_window.context_window_for", return_value=None):
+def test_zero_when_db_has_no_match() -> None:
+    settings = _settings(
+        claude_code_max_context_tokens=0, model="lmstudio/some-local-model"
+    )
+    with patch("config.context_window.lookup_context_window", return_value=None):
         assert resolve_max_context_tokens(settings) == 0
+
+
+def test_zero_when_model_has_no_provider_prefix() -> None:
+    settings = _settings(claude_code_max_context_tokens=0, model="")
+    assert resolve_max_context_tokens(settings) == 0
 
 
 def test_apply_sets_max_tokens_and_disable_compact() -> None:
     env: dict[str, str] = {}
-    apply_context_window_env(env, 272_000)
-    assert env["CLAUDE_CODE_MAX_CONTEXT_TOKENS"] == "272000"
+    apply_context_window_env(env, 1_000_000)
+    assert env["CLAUDE_CODE_MAX_CONTEXT_TOKENS"] == "1000000"
     assert env["DISABLE_COMPACT"] == "1"
 
 

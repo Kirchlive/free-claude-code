@@ -62,14 +62,3 @@ def test_lookup_fetches_and_matches() -> None:
 def test_lookup_returns_none_on_fetch_error() -> None:
     with patch("urllib.request.urlopen", side_effect=OSError("no network")):
         assert db.lookup_context_window("gpt-5.5") is None
-
-
-def test_context_window_for_uses_curated_without_network() -> None:
-    # A curated deployment value must win and must not touch the network.
-    with patch("urllib.request.urlopen", side_effect=AssertionError("must not fetch")):
-        assert db.context_window_for("openai_codex/gpt-5.5") == 272_000
-
-
-def test_context_window_for_falls_back_to_openrouter() -> None:
-    with patch("urllib.request.urlopen", return_value=_fake_urlopen(_payload())):
-        assert db.context_window_for("some-provider/gpt-5.5") == 1000000

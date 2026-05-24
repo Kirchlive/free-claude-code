@@ -100,7 +100,11 @@ def test_descriptors_cover_advertised_provider_ids():
     assert set(PROVIDER_DESCRIPTORS) == set(SUPPORTED_PROVIDER_IDS)
     for descriptor in PROVIDER_DESCRIPTORS.values():
         assert descriptor.provider_id
-        assert descriptor.transport_type in {"openai_chat", "anthropic_messages"}
+        assert descriptor.transport_type in {
+            "openai_chat",
+            "anthropic_messages",
+            "responses_oauth",
+        }
         assert descriptor.capabilities
 
 

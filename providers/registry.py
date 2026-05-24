@@ -136,6 +136,18 @@ def _create_cerebras(config: ProviderConfig, _settings: Settings) -> BaseProvide
     return CerebrasProvider(config)
 
 
+def _create_venice(config: ProviderConfig, _settings: Settings) -> BaseProvider:
+    from providers.venice import VeniceProvider
+
+    return VeniceProvider(config)
+
+
+def _create_openai_codex(config: ProviderConfig, _settings: Settings) -> BaseProvider:
+    from providers.openai import OpenAICodexProvider
+
+    return OpenAICodexProvider(config)
+
+
 PROVIDER_FACTORIES: dict[str, ProviderFactory] = {
     "nvidia_nim": _create_nvidia_nim,
     "open_router": _create_open_router,
@@ -154,6 +166,8 @@ PROVIDER_FACTORIES: dict[str, ProviderFactory] = {
     "lmstudio": _create_lmstudio,
     "llamacpp": _create_llamacpp,
     "ollama": _create_ollama,
+    "venice": _create_venice,
+    "openai_codex": _create_openai_codex,
 }
 
 if set(PROVIDER_DESCRIPTORS) != set(SUPPORTED_PROVIDER_IDS) or set(
@@ -203,6 +217,7 @@ def build_provider_config(
     proxy = _string_attr(settings, descriptor.proxy_attr)
     return ProviderConfig(
         api_key=credential,
+        credential_file=descriptor.credential_file,
         base_url=base_url or descriptor.default_base_url,
         rate_limit=settings.provider_rate_limit,
         rate_window=settings.provider_rate_window,
@@ -277,6 +292,12 @@ def _model_list_provider_ids_for_settings(settings: Settings) -> tuple[str, ...]
     provider_ids: list[str] = []
     for provider_id, descriptor in PROVIDER_DESCRIPTORS.items():
         if descriptor.static_credential is not None:
+            if provider_id in referenced_provider_ids:
+                provider_ids.append(provider_id)
+            continue
+        if descriptor.credential_file is not None:
+            # OAuth/file-credential providers (e.g. openai via Codex) have no env key;
+            # only discover when actually referenced by a configured model.
             if provider_id in referenced_provider_ids:
                 provider_ids.append(provider_id)
             continue

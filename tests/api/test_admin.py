@@ -6,7 +6,7 @@ from unittest.mock import patch
 import httpx
 from fastapi.testclient import TestClient
 
-from api.admin_config import MASKED_SECRET
+from api.admin_config import FIELDS, MASKED_SECRET
 from api.admin_urls import local_admin_url
 from api.app import create_app
 from config.settings import Settings
@@ -23,19 +23,26 @@ def _set_home(monkeypatch, tmp_path: Path) -> None:
 
 
 def _clear_process_config(monkeypatch) -> None:
-    for key in (
-        "MODEL",
-        "NVIDIA_NIM_API_KEY",
-        "OPENROUTER_API_KEY",
-        "ANTHROPIC_AUTH_TOKEN",
-        "FCC_ENV_FILE",
-        "HOST",
-        "PORT",
-        "LOG_FILE",
-        "ZAI_BASE_URL",
-        "CLAUDE_WORKSPACE",
-        "CLAUDE_CLI_BIN",
-    ):
+    # Clear every secret provider key so the apply tests don't inherit a key
+    # the developer happens to have set in their shell (e.g. GEMINI_API_KEY),
+    # which would lock the value as a process-env source and skip the update.
+    keys = {field.key for field in FIELDS if field.secret}
+    keys.update(
+        {
+            "MODEL",
+            "NVIDIA_NIM_API_KEY",
+            "OPENROUTER_API_KEY",
+            "ANTHROPIC_AUTH_TOKEN",
+            "FCC_ENV_FILE",
+            "HOST",
+            "PORT",
+            "LOG_FILE",
+            "ZAI_BASE_URL",
+            "CLAUDE_WORKSPACE",
+            "CLAUDE_CLI_BIN",
+        }
+    )
+    for key in keys:
         monkeypatch.delenv(key, raising=False)
 
 
